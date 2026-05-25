@@ -1,0 +1,6 @@
+{
+  "name": "OfficerAI",
+  "description": "AI-powered current affairs intelligence engine and revision platform for UPSC civil services preparation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
