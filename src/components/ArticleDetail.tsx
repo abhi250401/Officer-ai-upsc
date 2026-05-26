@@ -38,7 +38,7 @@ export default function ArticleDetail({
   onSelectRelated
 }: ArticleDetailProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    whatHappened: true,
+    whatHappened: false,
     whyImportant: false,
     prelimsSnapshot: false,
     mainsAnalysis: false,

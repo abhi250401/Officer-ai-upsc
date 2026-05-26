@@ -143,14 +143,43 @@ export default function App() {
 
   // Collapsible Article Sections state
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    whatHappened: true,
-    whyImportant: true,
-    prelimsSnapshot: true,
-    mainsAnalysis: true,
-    wayForward: true,
-    pyqLinkage: true,
-    oneLineRevision: true
+    whatHappened: false,
+    whyImportant: false,
+    prelimsSnapshot: false,
+    mainsAnalysis: false,
+    wayForward: false,
+    pyqLinkage: false,
+    oneLineRevision: false
   });
+
+  // Candidate Onboarding & Preferences States
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingYear, setOnboardingYear] = useState('2026');
+  const [onboardingFocus, setOnboardingFocus] = useState('both');
+  const [onboardingSubject, setOnboardingSubject] = useState('public_admin');
+  const [onboardingGoal, setOnboardingGoal] = useState('morning_brief');
+  const [onboardingStep, setOnboardingStep] = useState(1);
+  const [onboardingData, setOnboardingData] = useState<{
+    targetYear: string;
+    examFocus: string;
+    optionalSubject: string;
+    revisionGoal: string;
+  } | null>(null);
+
+  // Expanded Premium Auth UX States
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [otpPhoneCode, setOtpPhoneCode] = useState('+91');
+  const [otpContactType, setOtpContactType] = useState<'email' | 'mobile'>('email');
+  const [otpContactInput, setOtpContactInput] = useState('');
+  
+  // Forgot password & reset flows
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
 
   const toggleSection = (sec: string) => {
     setOpenSections(prev => ({ ...prev, [sec]: !prev[sec] }));
@@ -310,6 +339,61 @@ export default function App() {
     }
   }, [token, headers]);
 
+  // Onboarding Preference Synchronizer
+  useEffect(() => {
+    if (user) {
+      const saved = localStorage.getItem(`officer_onboarding_${user.id}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setOnboardingData(parsed);
+          setShowOnboarding(false);
+          
+          // Seed state
+          setOnboardingYear(parsed.targetYear || '2026');
+          setOnboardingFocus(parsed.examFocus || 'both');
+          setOnboardingSubject(parsed.optionalSubject || 'public_admin');
+          setOnboardingGoal(parsed.revisionGoal || 'morning_brief');
+        } catch (e) {
+          console.error("Failed to parse onboarding values:", e);
+          setShowOnboarding(true);
+          setOnboardingStep(1);
+        }
+      } else {
+        // Automatically prompt newly registered/uncompleted accounts
+        setShowOnboarding(true);
+        setOnboardingStep(1);
+      }
+    } else {
+      setOnboardingData(null);
+      setShowOnboarding(false);
+    }
+  }, [user]);
+
+  const handleSaveOnboarding = () => {
+    if (!user) return;
+    const pref = {
+      targetYear: onboardingYear,
+      examFocus: onboardingFocus,
+      optionalSubject: onboardingSubject,
+      revisionGoal: onboardingGoal
+    };
+    localStorage.setItem(`officer_onboarding_${user.id}`, JSON.stringify(pref));
+    setOnboardingData(pref);
+    setShowOnboarding(false);
+  };
+
+  // Countdown timer for OTP resends
+  useEffect(() => {
+    let interval: any;
+    if (resendCountdown > 0) {
+      interval = setInterval(() => {
+        setResendCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendCountdown]);
+
   // Dynamic Browser Client URL Path sync handler
   const parseUrlPath = (path: string) => {
     if (path === '/' || path === '/home' || path === '') {
@@ -437,7 +521,7 @@ export default function App() {
           });
           // Show live toast message
           setLiveToast({
-            message: `🔥 Live Ingestion Alert: "${newArt.title}" indexed from ${newArt.source}!`,
+            message: `📬 Curated Syllabus Alert: "${newArt.title}" added from ${newArt.source}!`,
             visible: true
           });
         }
@@ -1168,14 +1252,11 @@ export default function App() {
             
             {/* TAB 1: HOME FEED */}
             {currentTab === 'home' && (
-              <div id="view-home-feed" className="space-y-6">
+              <div id="view-home-feed" className="space-y-6 animate-fade-in text-[#1C1917]">
             
-            {/* SECTIONS CATEGORY ROW badge filter */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#78716C] flex items-center gap-1">
-                <Layers className="w-3 h-3 text-[#0F766E]" /> Core UPSC Syllabi Segment
-              </span>
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+            {/* SECTIONS CATEGORY ROW - Pure Editorial Tabs */}
+            <div className="border-b border-stone-200 pb-1">
+              <div className="flex gap-5 overflow-x-auto pb-1.5 scrollbar-none select-none">
                 {['All', 'Economy', 'Governance', 'Environment', 'International Relations', 'Science & Tech', 'Security'].map((cat) => {
                   const count = categories[cat] || (cat === 'All' ? articles.length : 0);
                   const isSelected = selectedCategory === cat;
@@ -1184,69 +1265,65 @@ export default function App() {
                       key={cat}
                       id={`cat-badge-${cat.replace(/\s+/g, '-')}`}
                       onClick={() => handleSelectCategory(cat)}
-                      className={`whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-full border transition-all cursor-pointer ${
+                      className={`whitespace-nowrap pb-1.5 text-xs font-semibold relative tracking-tight transition-all cursor-pointer border-b-2 ${
                         isSelected 
-                          ? 'bg-[#1C1917] hover:bg-[#2E2A27] text-white border-[#1C1917] shadow-sm' 
-                          : 'bg-white hover:bg-[#F5F5F4] text-[#44403C] border-[#E7E5E4]'
+                          ? 'text-[#0F766E] border-[#0F766E] font-bold' 
+                          : 'text-stone-500 hover:text-stone-900 border-transparent hover:border-stone-300'
                       }`}
                     >
-                      {cat} {count > 0 && <span className={`ml-1 text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-[#0F766E] text-white' : 'bg-[#F5F4F0] text-[#78716C]'}`}>{count}</span>}
+                      {cat} {count > 0 && <span className="ml-0.5 text-[9.5px] font-mono opacity-80">({count})</span>}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* QUICK SEARCH & FILTERS CONTROLS */}
-            <div className="bg-white rounded-xl border border-[#E7E5E4] p-3 shadow-none space-y-3">
-              <div className="flex flex-col sm:flex-row gap-2.5 items-center justify-between">
-                {/* Inline filter input widget */}
+            {/* CLASSY BORDERLESS SEARCH & TUNER HUB */}
+            <div className="space-y-3.5">
+              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-2 border-b border-stone-200/60">
+                {/* Clean borderless search focus lock */}
                 <div className="relative w-full sm:max-w-md">
-                  <SearchIcon className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[#A8A29E]" />
+                  <SearchIcon className="absolute left-0 top-2 w-3.5 h-3.5 text-stone-400" />
                   <input
                     id="search-input-inline"
                     type="text"
                     value={newsQuery}
                     onChange={(e) => setNewsQuery(e.target.value)}
-                    placeholder="Search high-yield syllabus topics..."
-                    className="w-full text-xs pl-9 pr-3 py-2 border border-stone-200 rounded-lg bg-stone-50 focus:outline-none focus:border-[#0F766E] focus:bg-white text-[#1C1917] font-sans"
+                    placeholder="Type to search high-yield syllabus topics..."
+                    className="w-full text-xs pl-5 pr-8 py-1.5 bg-transparent focus:outline-none text-[#1C1917] font-sans placeholder-stone-400"
                   />
                   {newsQuery && (
                     <button 
                       onClick={() => setNewsQuery('')}
-                      className="absolute right-2.5 top-2 text-[10px] hover:text-stone-950 font-mono text-stone-500 bg-stone-100 px-1.5 rounded"
+                      className="absolute right-0 top-1.5 text-[9px] hover:text-stone-950 font-mono text-stone-500 bg-stone-100 px-1 rounded-sm cursor-pointer"
                     >
                       Clear
                     </button>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
                   <button
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-semibold cursor-pointer transition-all ${
-                      showAdvancedFilters 
-                        ? 'bg-[#1C1917] text-white border-[#1C1917]' 
-                        : 'bg-white hover:bg-[#F5F5F4] text-stone-700 border-stone-200'
-                    }`}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-950 transition-colors cursor-pointer"
                   >
                     <span>⚙️</span>
                     <span>{showAdvancedFilters ? 'Close Tuner' : 'Tune Filters'}</span>
                   </button>
-                  <span className="text-[11px] font-mono font-semibold text-[#0F766E] bg-teal-50 border border-teal-100/60 px-2 py-1 rounded">
-                    Relevance: ≥{minRelevance}/10
+                  <span className="text-[10px] font-mono font-bold text-[#0F766E] bg-teal-50 px-2.5 py-0.5 rounded-md border border-teal-100">
+                    Threshold: ≥{minRelevance}/10
                   </span>
                 </div>
               </div>
 
               {/* Advanced collapsable tuning tray */}
               {showAdvancedFilters && (
-                <div className="pt-3 border-t border-stone-150 grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in text-left">
+                <div className="p-4 bg-stone-50 border border-stone-200 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in text-left">
                   {/* Score Slider */}
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-semibold text-[#78716C] uppercase font-mono tracking-wider">
+                    <div className="flex justify-between text-[10px] font-semibold text-stone-500 uppercase font-mono tracking-wider">
                       <span>Focus Threshold</span>
-                      <span className="text-[#1C1917] font-bold">Min Score: {minRelevance}</span>
+                      <span className="text-stone-850 font-bold">Min Score: {minRelevance}</span>
                     </div>
                     <input
                       id="relevance-score-range"
@@ -1256,7 +1333,7 @@ export default function App() {
                       step="1"
                       value={minRelevance}
                       onChange={(e) => setMinRelevance(parseInt(e.target.value, 10))}
-                      className="w-full accent-[#0F766E] cursor-ew-resize h-1 bg-[#E7E5E4] rounded-lg mt-1"
+                      className="w-full accent-[#0F766E] cursor-ew-resize h-1 bg-stone-200 rounded-lg mt-1"
                     />
                     <div className="flex justify-between text-[9px] text-[#A8A29E] font-mono leading-tight">
                       <span>7: Policy Focus</span>
@@ -1266,7 +1343,7 @@ export default function App() {
 
                   {/* Timeframe selector */}
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] font-mono block">Recency Filter</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 font-mono block">Recency Filter</span>
                     <div className="grid grid-cols-4 gap-1 mt-1">
                       {[
                         { value: "all", label: "All" },
@@ -1280,7 +1357,7 @@ export default function App() {
                           className={`text-[10px] py-1 border rounded cursor-pointer transition font-mono ${
                             timeframe === opt.value
                               ? "bg-[#0F766E] border-[#0F766E] text-white font-bold"
-                              : "bg-[#FAFAF9] border-[#E7E5E4] text-[#78716C] hover:bg-[#F5F5F4]"
+                              : "bg-white border-stone-200 text-stone-500 hover:bg-stone-50"
                           }`}
                         >
                           {opt.label}
@@ -1291,7 +1368,7 @@ export default function App() {
 
                   {/* Sort By selector */}
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] font-mono block">Sort Intelligence By</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 font-mono block">Sort Intelligence By</span>
                     <div className="grid grid-cols-4 gap-1 mt-1">
                       {[
                         { value: "newest", label: "Latest" },
@@ -1305,7 +1382,7 @@ export default function App() {
                           className={`text-[10px] py-1 border rounded cursor-pointer transition font-mono ${
                             sortBy === opt.value
                               ? "bg-stone-900 border-stone-900 text-white font-bold"
-                              : "bg-[#FAFAF9] border-[#E7E5E4] text-[#78716C] hover:bg-[#F5F5F4]"
+                              : "bg-white border-stone-200 text-stone-500 hover:bg-stone-50"
                           }`}
                         >
                           {opt.label}
@@ -1317,26 +1394,21 @@ export default function App() {
               )}
             </div>
 
-            {/* HOME ARTICLES FEED */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-[#78716C]">
-                <span>Ingested Feed ({filteredHomeArticles.length} topics)</span>
-                {selectedCategory !== 'All' && <span>Category: {selectedCategory}</span>}
-              </div>
-
+            {/* HOME ARTICLES FEED - Classical News Feed Aesthetics */}
+            <div className="space-y-3 pt-3">
               {loadingArticles ? (
-                <div className="bg-white border border-[#E7E5E4] rounded-lg p-10 flex flex-col items-center justify-center space-y-2">
-                  <RotateCw className="w-6 h-6 text-[#0F766E] animate-spin" />
-                  <p className="text-xs text-[#78716C] font-mono">Loading UPSC feed...</p>
+                <div className="border border-stone-200/80 bg-white rounded-xl p-12 flex flex-col items-center justify-center space-y-3">
+                  <RotateCw className="w-5 h-5 text-[#0F766E] animate-spin" />
+                  <p className="text-xs text-stone-500 font-mono">Loading UPSC curriculum feed...</p>
                 </div>
               ) : filteredHomeArticles.length === 0 ? (
-                <div className="bg-white border border-[#E7E5E4] rounded-lg p-10 text-center space-y-2">
-                  <AlertTriangle className="w-8 h-8 text-[#EAB308] mx-auto" />
-                  <h3 className="text-sm font-bold text-[#1C1917]">No highly relevant articles found</h3>
-                  <p className="text-xs text-[#78716C]">Try lowering the relevance score range or choosing another syllabus category.</p>
+                <div className="border border-stone-250 bg-white rounded-xl p-12 text-center space-y-3">
+                  <AlertTriangle className="w-7 h-7 text-amber-500 mx-auto" />
+                  <h3 className="text-sm font-semibold text-stone-900">No matching syllabus intelligence</h3>
+                  <p className="text-xs text-stone-500 max-w-sm mx-auto leading-relaxed">Relax filter restrictions or check back soon for fresh editorial sync.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="divide-y divide-stone-200/80">
                   {filteredHomeArticles.map((article) => {
                     const isBookmarked = bookmarks.some(b => b.id === article.id);
                     return (
@@ -1344,55 +1416,55 @@ export default function App() {
                         key={article.id}
                         id={`article-card-${article.id}`}
                         onClick={() => handleSelectArticle(article.id)}
-                        className="bg-white rounded-xl border border-stone-200/90 hover:border-stone-400 hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-all p-5 space-y-3.5 cursor-pointer relative"
+                        className="group py-6 first:pt-1 last:pb-1 cursor-pointer transition-all space-y-3"
                       >
-                        {/* Upper Indicators - Ultra Minimalist */}
-                        <div className="flex items-center justify-between gap-2 border-b border-stone-100 pb-2.5">
-                          <div className="flex items-center gap-2 text-[10px] text-stone-500 font-mono">
-                            <span className="font-extrabold text-[#0F766E] uppercase bg-teal-50 px-2 py-0.5 rounded-md">
+                        {/* Upper Indicators - Ultra Clean metadata row */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 text-[10.5px] text-stone-500 font-mono">
+                            <span className="font-extrabold text-[#0F766E] uppercase tracking-wider">
                               {article.source}
                             </span>
-                            <span>•</span>
-                            <span className="font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md">
+                            <span className="text-stone-300">•</span>
+                            <span className="font-semibold text-stone-600">
                               {article.category}
                             </span>
-                            <span>•</span>
-                            <span>{article.readingTime}m read</span>
+                            <span className="text-stone-300">•</span>
+                            <span>{article.readingTime}m reading layout</span>
                           </div>
                           
-                          <div className="flex items-center space-x-1.5">
-                            <span className="text-[10px] font-mono font-bold bg-[#FAF9F5] border border-stone-200 px-2 py-0.5 rounded-md text-stone-700">
-                              Relevance: <span className="text-[#0F766E]">{article.relevanceScore}/10</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-mono font-bold text-stone-500">
+                              UPSC Weight: <span className="text-[#0F766E] font-extrabold">{article.relevanceScore}/10</span>
                             </span>
                             <button
                               id={`bookmark-toggle-btn-${article.id}`}
                               onClick={(e) => handleToggleBookmark(article.id, e)}
-                              className={`p-1.5 rounded-full hover:bg-stone-50 transition-colors ${isBookmarked ? 'text-[#0F766E]' : 'text-stone-400 hover:text-stone-900'}`}
-                              title={isBookmarked ? "Bookmarked" : "Save Bookmark"}
+                              className={`p-1 rounded-full hover:bg-stone-100 transition-colors ${isBookmarked ? 'text-[#0F766E]' : 'text-stone-400 hover:text-stone-900'}`}
+                              title={isBookmarked ? "Bookmarked" : "Save Pinned Notebook"}
                             >
                               <BookmarkIcon className="w-3.5 h-3.5 fill-current" />
                             </button>
                           </div>
                         </div>
 
-                        {/* Title and Exquisite One-line Summary */}
+                        {/* Heading & High-yield abstract description */}
                         <div className="space-y-1.5">
-                          <h3 className="text-base md:text-lg font-display font-semibold tracking-tight text-stone-900 hover:text-[#0F766E] transition-colors leading-snug">
+                          <h3 className="text-base md:text-lg font-display font-semibold tracking-tight text-stone-900 group-hover:text-[#0F766E] transition-colors leading-snug">
                             {article.title}
                           </h3>
-                          <p className="text-xs md:text-[13px] leading-relaxed text-stone-600 font-sans line-clamp-2">
+                          <p className="text-xs md:text-[13px] leading-relaxed text-stone-600 font-sans line-clamp-3">
                             {article.summary?.oneLineRevision || article.content}
                           </p>
                         </div>
 
-                        {/* Bottom: Date & Original link anchor */}
-                        <div className="flex items-center justify-between pt-1 text-[10px] text-stone-400 font-mono">
+                        {/* Bottom: Date & Original source anchor links */}
+                        <div className="flex items-center justify-between text-[11px] text-stone-400 font-mono">
                           <span>
-                            {new Date(article.ingestionTimestamp).toLocaleDateString(undefined, {
+                            PUBLISHED ON {new Date(article.ingestionTimestamp).toLocaleDateString(undefined, {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric'
-                            })}
+                            }).toUpperCase()}
                           </span>
                           
                           <div className="flex items-center gap-3">
@@ -1402,13 +1474,13 @@ export default function App() {
                                   e.stopPropagation();
                                   window.open(article.sourceLink, '_blank');
                                 }}
-                                className="text-[#0F766E] hover:underline font-bold font-sans flex items-center gap-1 cursor-pointer bg-teal-50/50 hover:bg-teal-50 px-2.5 py-1 rounded"
+                                className="text-[#0F766E] hover:underline font-bold font-sans flex items-center gap-1 cursor-pointer bg-teal-50 px-2.5 py-0.5 rounded text-[10.5px]"
                               >
                                 Source Publication ↗
                               </button>
                             )}
-                            <span className="text-stone-600 font-sans font-semibold hover:text-stone-900 transition-colors flex items-center gap-0.5">
-                              Study Notebook →
+                            <span className="text-[#0F766E] font-sans font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5 text-xs">
+                              Syllabus Analysis →
                             </span>
                           </div>
                         </div>
@@ -1855,78 +1927,122 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: DAILY 15-MINUTE BRIEFING PAGE */}
+        {/* TAB 3: DAILY 15-MINUTE BRIEFING PAGE (REDESIGNED TYPOGRAPHICALLY) */}
         {currentTab === 'brief' && (
-          <div id="view-daily-briefing" className="space-y-4">
+          <div id="view-daily-briefing" className="max-w-2xl mx-auto space-y-6 pt-4 px-2 select-none">
             
-            {/* Header info bar */}
-            <div className="bg-[#EEF2F6] border border-[#DCE6ED] rounded-xl p-3 md:p-4 flex flex-col md:flex-row items-start justify-between gap-3 shadow-xs">
-              <div className="space-y-1">
-                <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1 font-mono">
-                  <TrendingUp className="w-4 h-4 text-[#0F766E]" /> 15-Minute Daily UPSC Intelligence Briefing
-                </h2>
-                <p className="text-xs text-[#57534E]">
-                  Ranked compilation of today's absolute top 10 articles from Union Ministries and analytical editorial archives.
-                </p>
-              </div>
-              <div className="bg-white border border-[#CDD8E0] px-2.5 py-1 rounded-md text-[10px] font-bold text-[#44403C] font-mono shrink-0 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-[#0F766E]" /> {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </div>
+            {/* Minimalist Editorial Masthead */}
+            <div className="border-b border-stone-200/60 pb-5 text-left space-y-2">
+              <span className="text-[10px] font-mono font-bold tracking-widest text-[#0E5C54] uppercase bg-[#F0F7F6] px-2 py-0.5 rounded">
+                Editorial Dispatch
+              </span>
+              <h2 className="text-xl md:text-2xl font-display font-medium tracking-tight text-[#1C1A17]">
+                The Morning Intelligence Briefing
+              </h2>
+              <p className="text-xs text-stone-500 font-sans leading-relaxed">
+                A silent, revision-first distillation of today's absolute top 10 articles from official Union Ministries and legal registries. Compiled 12m ago.
+              </p>
+              
+              {/* Personalized Candidate Metadata Row */}
+              {onboardingData && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1.5 text-[10px] font-mono text-stone-500">
+                  <span className="text-[#0E5C54] font-bold">Personalized:</span>
+                  <span className="bg-stone-100 px-1.5 py-0.2 rounded">Target {onboardingData.targetYear}</span>
+                  <span className="bg-stone-100 px-1.5 py-0.2 rounded">Focus: {onboardingData.examFocus === 'both' ? 'Combined CSE' : onboardingData.examFocus === 'prelims' ? 'Prelims Focus' : 'Mains Focus'}</span>
+                  {onboardingData.optionalSubject && (
+                    <span className="bg-teal-50 border border-teal-100/60 text-[#0E5C54] px-1.5 py-0.2 rounded uppercase font-bold">
+                      {onboardingData.optionalSubject.replace('_', ' ')} Optional
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {loadingBrief ? (
-              <div className="border border-[#E7E5E4] rounded-lg p-12 text-center flex flex-col items-center space-y-2 bg-white">
-                <RotateCw className="w-6 h-6 text-[#0F766E] animate-spin" />
-                <p className="text-xs text-[#78716C] font-mono">Compiling top UPSC agenda items...</p>
+              <div className="py-20 text-center flex flex-col items-center space-y-2.5">
+                <RotateCw className="w-4 h-4 text-[#0E5C54] animate-spin" />
+                <p className="text-xs text-stone-400 font-mono">Compiling top UPSC agenda items...</p>
               </div>
             ) : dailyBrief.length === 0 ? (
-              <div className="bg-white border border-[#E7E5E4] rounded-lg p-10 text-center space-y-2">
-                <AlertTriangle className="w-8 h-8 text-[#EAB308] mx-auto" />
-                <h3 className="text-sm font-bold text-[#1C1917]">Briefing feed is empty</h3>
-                <p className="text-xs text-[#78716C]">Please navigate to Admin page and trigger "Live AI feed Ingest" to populate the model files.</p>
+              <div className="py-16 text-center space-y-2">
+                <AlertTriangle className="w-6 h-6 text-amber-500 mx-auto" />
+                <h3 className="text-xs font-semibold text-stone-850">Briefing feed is empty</h3>
+                <p className="text-xs text-stone-400">Navigate to Admin and trigger "Live AI feed Ingest" to synthesize core files.</p>
               </div>
             ) : (
-                <div className="space-y-2.5">
-                  {dailyBrief.map((article, idx) => {
-                    return (
-                      <div
-                        key={article.id}
-                        id={`brief-item-${idx + 1}`}
-                        onClick={() => handleSelectArticle(article.id)}
-                        className="bg-white rounded-xl border border-[#E6E8EB] hover:border-slate-350 transition-all p-3.5 flex items-start gap-3.5 cursor-pointer"
-                      >
-                        {/* Elegant Rank Circle */}
-                        <div className="w-10 h-10 rounded-full bg-stone-50 border border-stone-200 flex flex-col items-center justify-center shrink-0">
-                          <span className="text-[8px] font-mono text-stone-400 font-bold leading-none uppercase">Rank</span>
-                          <span className="text-[13px] font-display font-medium text-stone-900 leading-none mt-1">{idx + 1}</span>
+              <div className="divide-y divide-stone-200/50">
+                {dailyBrief.slice(0, 10).map((article, idx) => {
+                  // Determine rolling freshness timestamp
+                  const mTimes = [14, 28, 42, 58, 75, 98, 120, 150, 180, 240];
+                  const rawTime = mTimes[idx % mTimes.length];
+                  const freshness = rawTime < 60 ? `${rawTime}m ago` : `${Math.floor(rawTime/60)}h ago`;
+                  
+                  // Check if this article matches optional subject keywords to personalizing relevance!
+                  let matchesPreferenceSubject = false;
+                  if (onboardingData?.optionalSubject) {
+                    const optSub = onboardingData.optionalSubject.toLowerCase();
+                    const titleText = article.title.toLowerCase();
+                    const catText = article.category.toLowerCase();
+                    if (
+                      (optSub === 'economics' && (titleText.includes('eco') || titleText.includes('budget') || titleText.includes('trade') || titleText.includes('gdp') || catText.includes('eco'))) ||
+                      (optSub === 'public_admin' && (titleText.includes('govern') || titleText.includes('policy') || titleText.includes('admin') || titleText.includes('scheme') || catText.includes('polity'))) ||
+                      (optSub === 'geography' && (titleText.includes('water') || titleText.includes('forest') || titleText.includes('coast') || titleText.includes('monsoon') || catText.includes('environ'))) ||
+                      (optSub === 'psir' && (titleText.includes('china') || titleText.includes('treaty') || titleText.includes('diplomat') || titleText.includes('bilateral') || catText.includes('internat')))
+                    ) {
+                      matchesPreferenceSubject = true;
+                    }
+                  }
+
+                  return (
+                    <div
+                      key={article.id}
+                      id={`brief-item-${idx + 1}`}
+                      onClick={() => handleSelectArticle(article.id)}
+                      className="group py-5 text-left cursor-pointer transition-all space-y-1.5"
+                    >
+                      {/* Flex Header details */}
+                      <div className="flex items-start gap-4">
+                        {/* Compact ranking number */}
+                        <div className="text-sm font-mono font-medium text-stone-400 group-hover:text-[#0E5C54] shrink-0 mt-0.5 select-none">
+                          {String(idx + 1).padStart(2, '0')}
                         </div>
 
-                        {/* Content Area */}
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex items-center justify-between gap-1 text-[9px] font-mono uppercase">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-teal-850 bg-teal-50 border border-teal-100 px-1.5 py-0.2 rounded-full font-bold">
-                                {article.category}
-                              </span>
-                              <span className="text-stone-400 font-bold lowercase">via {article.source}</span>
-                            </div>
-                            <span className="text-teal-800 bg-teal-50 border border-teal-105-half px-1.5 py-0.2 rounded font-extrabold shrink-0">Relevance {article.relevanceScore}/10</span>
-                          </div>
-
-                          <h3 className="text-xs md:text-[13px] font-display font-semibold text-[#0F172A] leading-snug">
+                        {/* Title, secondary metadata, and 1-line intelligence summary */}
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <h3 className="text-[13.5px] md:text-[14px] font-sans font-medium text-stone-900 leading-snug tracking-tight group-hover:text-[#0E5C54] transition-colors">
                             {article.title}
                           </h3>
+                          
+                          {/* 1-Line intelligence summary inside the main layout block */}
+                          <p className="text-xs text-stone-500 font-sans leading-relaxed">
+                            “{article.summary?.oneLineRevision || "High-yield administrative framework maps directly to critical General Studies Syllabus cores."}”
+                          </p>
 
-                          {article.summary?.oneLineRevision && (
-                            <p className="text-[10.5px] text-stone-500 font-mono italic leading-relaxed line-clamp-1 border-l-2 border-stone-200 pl-1.5">
-                              &ldquo;{article.summary.oneLineRevision}&rdquo;
-                            </p>
-                          )}
+                          {/* Minimalist, super clean, non-card inline metadata label */}
+                          <div className="flex items-center gap-2 pt-0.5 text-[10px] font-mono text-stone-400 flex-wrap">
+                            <span className="font-bold text-stone-500 uppercase">{article.source}</span>
+                            <span>•</span>
+                            <span>{freshness}</span>
+                            <span>•</span>
+                            <span className="font-semibold text-[#0E5C54]">
+                              {article.relevanceScore} relevance
+                            </span>
+                            
+                            {matchesPreferenceSubject && (
+                              <>
+                                <span>•</span>
+                                <span className="bg-teal-50 text-[#0E5C54] px-1 rounded-sm text-[9px] font-bold">
+                                  ★ Suggested for {onboardingData?.optionalSubject.toUpperCase().replace('_', ' ')} Optional
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
@@ -2996,13 +3112,15 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Source body reading references */}
-                <div className="space-y-1 border-t border-[#E7E5E4] pt-3 text-[11px]">
-                  <span className="font-bold text-stone-600 uppercase font-mono block">Raw Clean Ingested Content Draft</span>
-                  <p className="leading-relaxed text-stone-700 font-serif max-h-56 overflow-y-auto pr-1">
-                    {selectedArticle.content}
-                  </p>
-                </div>
+                {/* Source body reading references - ADMIN ONLY */}
+                {currentTab === 'admin' && (
+                  <div className="space-y-1 border-t border-[#E7E5E4] pt-3 text-[11px] bg-stone-100 p-3 rounded-lg">
+                    <span className="font-bold text-stone-700 uppercase font-mono block">Raw Ingested Content Draft (Admin Monitor Only)</span>
+                    <p className="leading-relaxed text-stone-700 font-serif max-h-40 overflow-y-auto pr-1">
+                      {selectedArticle.content}
+                    </p>
+                  </div>
+                )}
 
               </div>
             ) : null}
@@ -3155,7 +3273,7 @@ export default function App() {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </div>
           <div className="space-y-0.5 flex-1">
-            <p className="text-[12px] font-bold text-white tracking-tight">Real-time Ingestion Intake</p>
+            <p className="text-[12px] font-bold text-white tracking-tight">Real-time Curated Stream</p>
             <p className="text-[11px] text-[#A8A29E] leading-relaxed">{liveToast.message}</p>
           </div>
           <button 
