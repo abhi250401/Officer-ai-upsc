@@ -14,25 +14,56 @@ const PORT = 3000;
 const DB_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "db.json");
 
-// MongoDB Global Connectivity state
+// ─── MongoDB Configuration ────────────────────────────────────────────────────
+// Hardcoded URI — also readable from MONGODB_URI env var (env takes precedence)
+const MONGO_URI =
+  process.env.MONGODB_URI ||
+  "mongodb+srv://root:123@cluster0.xjufbs2.mongodb.net/?appName=Cluster0";
+const MONGO_DB_NAME = "officerai_upsc";
+
 let mongoClient: MongoClient | null = null;
 let mongoDb: any = null;
+let mongoReady = false; // flag: true once first successful connection
 
-async function connectMongo() {
-  if (process.env.MONGODB_URI) {
-    try {
-      if (!mongoClient) {
-        mongoClient = new MongoClient(process.env.MONGODB_URI);
-        await mongoClient.connect();
-        mongoDb = mongoClient.db("officerai_upsc");
-        console.log("Connected to MongoDB Atlas successfully");
-      }
-      return mongoDb;
-    } catch (err) {
-      console.error("Failed to connect to MongoDB Atlas, falling back to local storage:", err);
+async function connectMongo(): Promise<any> {
+  try {
+    if (!mongoClient) {
+      mongoClient = new MongoClient(MONGO_URI, {
+        serverSelectionTimeoutMS: 8000,
+        connectTimeoutMS: 8000,
+      });
+      await mongoClient.connect();
+      mongoDb = mongoClient.db(MONGO_DB_NAME);
+      mongoReady = true;
+      console.log(`[MongoDB] Connected to Atlas → db: ${MONGO_DB_NAME}`);
     }
+    return mongoDb;
+  } catch (err) {
+    console.error("[MongoDB] Connection failed — using local db.json fallback:", err);
+    mongoReady = false;
+    return null;
   }
-  return null;
+}
+
+// Ensure indexes exist for fast querying
+async function ensureIndexes(mDb: any) {
+  try {
+    await mDb.collection("articles").createIndex({ id: 1 }, { unique: true });
+    await mDb.collection("articles").createIndex({ ingestionTimestamp: -1 });
+    await mDb.collection("articles").createIndex({ category: 1 });
+    await mDb.collection("articles").createIndex({ relevanceScore: -1 });
+    await mDb.collection("articles").createIndex(
+      { title: "text", content: "text", "summary.whatHappened": "text", tags: "text" },
+      { name: "articles_text_search" }
+    );
+    await mDb.collection("users").createIndex({ email: 1 }, { unique: true });
+    await mDb.collection("users").createIndex({ id: 1 }, { unique: true });
+    await mDb.collection("bookmarks").createIndex({ userId: 1, articleId: 1 });
+    await mDb.collection("revision_cards").createIndex({ userId: 1 });
+    console.log("[MongoDB] Indexes ensured.");
+  } catch (err) {
+    console.warn("[MongoDB] Index creation warning (non-fatal):", err);
+  }
 }
 
 // Server-Sent Events (SSE) Client Pool
@@ -239,164 +270,148 @@ const initialArticles = [
   }
 ];
 
-// Load whole database safely
-function loadDB() {
+// ─── loadDBFromFile: sync local-file fallback (used when MongoDB is unreachable) ──
+function loadDBFromFile() {
   try {
-    if (!fs.existsSync(DB_PATH)) {
-      const defaultDB = {
-        users: [] as any[],
-        articles: initialArticles,
-        bookmarks: [] as any[],
-        revision_cards: [] as any[],
-        ingestion_logs: [
-          {
-            id: "log-seed",
-            timestamp: new Date().toISOString(),
-            status: "SUCCESS",
-            message: "Database initialized with core UPSC seed articles.",
-            articlesProcessed: 3,
-            articlesIngested: 3
-          }
-        ],
-        sources: initialSources,
-      };
-      fs.writeFileSync(DB_PATH, JSON.stringify(defaultDB, null, 2));
-      return defaultDB;
+    if (fs.existsSync(DB_PATH)) {
+      const raw = fs.readFileSync(DB_PATH, "utf-8");
+      return JSON.parse(raw);
     }
-    const raw = fs.readFileSync(DB_PATH, "utf-8");
-    const data = JSON.parse(raw);
-    if (data && data.articles && data.articles.length < 10) {
-      let added = 0;
-      for (const catalogTopic of FALLBACK_UPSC_CATALOG) {
-        const hash = crypto.createHash("md5").update(catalogTopic.title).digest("hex");
-        if (data.articles.some((a: any) => a.articleHash === hash || a.title.toLowerCase() === catalogTopic.title.toLowerCase())) {
-          continue;
-        }
-        const articleId = "art-" + crypto.randomUUID().substring(0, 8);
-        const mcqId = "mcq-" + crypto.randomUUID().substring(0, 8);
-        const sumId = "sum-" + crypto.randomUUID().substring(0, 8);
-        const newArticle = {
-          id: articleId,
-          title: catalogTopic.title,
-          source: catalogTopic.source,
-          sourcePriority: catalogTopic.sourcePriority,
-          articleHash: hash,
-          ingestionTimestamp: new Date().toISOString(),
-          relevanceScore: 9,
-          category: catalogTopic.category,
-          tags: catalogTopic.tags,
-          content: catalogTopic.content,
-          readingTime: 3,
-          summary: {
-            id: sumId,
-            articleId,
-            ...catalogTopic.summary
-          },
-          mcq: {
-            id: mcqId,
-            articleId,
-            articleTitle: catalogTopic.title,
-            ...catalogTopic.mcq
-          }
-        };
-        data.articles.push(newArticle);
-        added++;
-      }
-      if (added > 0) {
-        fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-      }
-    }
-    return data;
   } catch (err) {
-    console.error("Failed to parse database file. Resetting to initial database...", err);
-    const defaultDB = {
-      users: [] as any[],
-      articles: initialArticles,
-      bookmarks: [] as any[],
-      revision_cards: [] as any[],
-      ingestion_logs: [],
-      sources: initialSources,
-    };
-    return defaultDB;
+    console.error("[DB] Failed to read local db.json:", err);
   }
+  return {
+    users: [] as any[],
+    articles: initialArticles,
+    bookmarks: [] as any[],
+    revision_cards: [] as any[],
+    ingestion_logs: [],
+    sources: initialSources,
+  };
 }
 
-// MongoDB Async Propagation helper for individual collections
+// ─── loadDB: async MongoDB-primary read (used by all route handlers) ──────────
+async function loadDB(): Promise<any> {
+  if (mongoReady) {
+    try {
+      const keys = ["users", "articles", "sources", "bookmarks", "revision_cards", "ingestion_logs"];
+      const db: any = {};
+      for (const key of keys) {
+        db[key] = await loadFromMongo(key);
+      }
+      return db;
+    } catch (err) {
+      console.error("[DB] MongoDB loadDB error — falling back to file:", err);
+    }
+  }
+  return loadDBFromFile();
+}
+
+// ─── MongoDB helpers ──────────────────────────────────────────────────────────
+
+// Upsert an array of documents into a collection by `id` field
 async function saveToMongo(key: string, dataArray: any[]) {
   const mDb = await connectMongo();
   if (!mDb) return;
+  if (!dataArray || dataArray.length === 0) return;
   try {
-    const colName = key === "revision_cards" ? "revision_cards" : key;
-    const col = mDb.collection(colName);
-    // Dynamic batch upsert
-    for (const item of dataArray) {
-      if (item && item.id) {
-        await col.updateOne({ id: item.id }, { $set: item }, { upsert: true });
-      }
-    }
+    const col = mDb.collection(key);
+    const ops = dataArray
+      .filter((item) => item && item.id)
+      .map((item) => ({
+        updateOne: {
+          filter: { id: item.id },
+          update: { $set: item },
+          upsert: true,
+        },
+      }));
+    if (ops.length > 0) await col.bulkWrite(ops, { ordered: false });
   } catch (err) {
-    console.error(`MongoDB write failure for collection ${key}:`, err);
+    console.error(`[MongoDB] bulkWrite failure for '${key}':`, err);
   }
 }
 
-// MongoDB Sync on startup to reconcile local flat database and Atlas databases
-async function syncWithMongo() {
-  const db = loadDB();
+// Read all documents from a collection (strips _id)
+async function loadFromMongo(key: string): Promise<any[]> {
   const mDb = await connectMongo();
-  if (!mDb) return db;
-
+  if (!mDb) return [];
   try {
-    const collectionsToSync = ["users", "articles", "sources", "bookmarks", "revision_cards", "ingestion_logs"];
-    
-    for (const key of collectionsToSync) {
-      const colName = key === "revision_cards" ? "revision_cards" : key;
-      const col = mDb.collection(colName);
-      const dbList = db[key] || [];
-      
-      if (dbList.length > 0) {
-        for (const item of dbList) {
-          if (item && item.id) {
-            await col.updateOne({ id: item.id }, { $set: item }, { upsert: true });
-          }
-        }
-      }
-      
-      const mongoList = await col.find({}).toArray();
-      const mergedMap = new Map();
-      dbList.forEach((item: any) => mergedMap.set(item.id, item));
-      mongoList.forEach((item: any) => {
-        // Strip mongo internal _id node
-        const { _id, ...rest } = item;
-        mergedMap.set(item.id, rest);
-      });
-      db[key] = Array.from(mergedMap.values());
-    }
-
-    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
-    console.log("MongoDB Atlas databases fully synchronized with local db.json");
+    const docs = await mDb.collection(key).find({}).toArray();
+    return docs.map(({ _id, ...rest }: any) => rest);
   } catch (err) {
-    console.error("Error synchronizing with MongoDB on startup:", err);
+    console.error(`[MongoDB] read failure for '${key}':`, err);
+    return [];
   }
+}
+
+// ─── Primary DB bootstrap ─────────────────────────────────────────────────────
+// MongoDB is the source of truth. db.json is a local fallback/cache only.
+async function syncWithMongo() {
+  const mDb = await connectMongo();
+  if (!mDb) {
+    console.warn("[DB] MongoDB unreachable — falling back to local db.json");
+    return loadDBFromFile();
+  }
+  await ensureIndexes(mDb);
+  const keys = ["users", "articles", "sources", "bookmarks", "revision_cards", "ingestion_logs"];
+  const db: any = {};
+  for (const key of keys) {
+    const docs = await loadFromMongo(key);
+    if (docs.length === 0) {
+      let seed: any[] = [];
+      if (key === "articles") seed = initialArticles;
+      if (key === "sources") seed = initialSources;
+      if (seed.length > 0) {
+        console.log(`[MongoDB] Seeding '${key}' with ${seed.length} documents…`);
+        await saveToMongo(key, seed);
+        db[key] = seed;
+      } else {
+        db[key] = [];
+      }
+    } else {
+      db[key] = docs;
+    }
+  }
+  // Backfill catalog if articles are still sparse
+  if (db.articles.length < 10) {
+    let added = 0;
+    for (const topic of FALLBACK_UPSC_CATALOG) {
+      const hash = crypto.createHash("md5").update(topic.title).digest("hex");
+      if (!db.articles.some((a: any) => a.articleHash === hash || a.title.toLowerCase() === topic.title.toLowerCase())) {
+        const articleId = "art-" + crypto.randomUUID().substring(0, 8);
+        const article = { id: articleId, ...topic, articleHash: hash, ingestionTimestamp: new Date().toISOString() };
+        db.articles.push(article);
+        added++;
+      }
+    }
+    if (added > 0) await saveToMongo("articles", db.articles);
+    console.log(`[MongoDB] Backfilled ${added} catalog articles.`);
+  }
+  // Cache to local file (best-effort — non-fatal)
+  try {
+    if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
+    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+  } catch (_) {}
+  console.log(`[DB] Ready — ${db.articles.length} articles, ${db.sources.length} sources.`);
   return db;
 }
 
-// Save database atomical-style & propagate to Atlas asynchronously
+// Save to MongoDB (primary) and update local cache
 function saveDB(data: any) {
+  // Fire-and-forget to MongoDB (always, since MongoDB is primary)
+  Promise.all([
+    saveToMongo("users", data.users || []),
+    saveToMongo("articles", data.articles || []),
+    saveToMongo("sources", data.sources || []),
+    saveToMongo("bookmarks", data.bookmarks || []),
+    saveToMongo("revision_cards", data.revision_cards || []),
+    saveToMongo("ingestion_logs", data.ingestion_logs || []),
+  ]).catch((err) => console.error("[MongoDB] saveDB propagation error:", err));
+  // Also update local cache (non-fatal)
   try {
+    if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-    if (process.env.MONGODB_URI) {
-      Promise.all([
-        saveToMongo("users", data.users || []),
-        saveToMongo("articles", data.articles || []),
-        saveToMongo("sources", data.sources || []),
-        saveToMongo("bookmarks", data.bookmarks || []),
-        saveToMongo("revision_cards", data.revision_cards || []),
-        saveToMongo("ingestion_logs", data.ingestion_logs || [])
-      ]).catch((err) => console.error("Async MongoDB save propagation failed:", err));
-    }
-  } catch (err) {
-    console.error("Error writing data to database file:", err);
-  }
+  } catch (_) {}
 }
 
 // Setup Express Router
@@ -434,7 +449,7 @@ function computeFuzzyScore(text: string, query: string): number {
 
 // Scraper background worker / queue helpers
 async function triggerIngestForSource(source: any) {
-  const db = loadDB();
+  const db = await loadDB();
   const logs = db.ingestion_logs || [];
   
   source.lastAttempt = new Date().toISOString();
@@ -599,7 +614,7 @@ function startBackgroundScheduler() {
   console.log("Background scheduler started ticking...");
   setInterval(async () => {
     try {
-      const db = loadDB();
+      const db = await loadDB();
       const activeSources = db.sources.filter((s: any) => s.isActive);
       const now = new Date();
       let someCompleted = false;
@@ -622,7 +637,7 @@ function startBackgroundScheduler() {
       }
 
       if (someCompleted) {
-        const refreshedDB = loadDB();
+        const refreshedDB = await loadDB();
         const indexedToday = refreshedDB.articles.filter((a: any) => {
           const ts = new Date(a.ingestionTimestamp);
           const today = new Date();
@@ -642,14 +657,14 @@ function startBackgroundScheduler() {
 }
 
 // Global Server-Sent Events SSE Broker Connection endpoint
-app.get("/api/live-updates", (req, res) => {
+app.get("/api/live-updates", async (req, res) => {
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     "Connection": "keep-alive"
   });
   
-  const db = loadDB();
+  const db = await loadDB();
   const indexedToday = db.articles.filter((a: any) => {
     const ts = new Date(a.ingestionTimestamp);
     const today = new Date();
@@ -680,8 +695,8 @@ app.get("/api/live-updates", (req, res) => {
 });
 
 // Admin System Monitoring Diagnostics Stats Endpoint
-app.get("/api/admin/diagnostics", (req, res) => {
-  const db = loadDB();
+app.get("/api/admin/diagnostics", async (req, res) => {
+  const db = await loadDB();
   const sources = db.sources || [];
   
   const totalFeeds = sources.length;
@@ -724,13 +739,13 @@ app.get("/api/admin/diagnostics", (req, res) => {
 });
 
 // API: Authentication Routes
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
   const { email, password, name } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({ error: "Name, email, and password are required" });
   }
 
-  const db = loadDB();
+  const db = await loadDB();
   const exists = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
   if (exists) {
     return res.status(400).json({ error: "User with this email already exists" });
@@ -755,13 +770,13 @@ app.post("/api/auth/register", (req, res) => {
   });
 });
 
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" });
   }
 
-  const db = loadDB();
+  const db = await loadDB();
   const user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
   if (!user) {
     return res.status(401).json({ error: "Invalid email or password" });
@@ -787,12 +802,12 @@ function getUserIdFromReq(req: any): string | null {
   return null;
 }
 
-app.get("/api/auth/me", (req, res) => {
+app.get("/api/auth/me", async (req, res) => {
   const userId = getUserIdFromReq(req);
   if (!userId) {
     return res.status(401).json({ error: "Unauthorized access" });
   }
-  const db = loadDB();
+  const db = await loadDB();
   const user = db.users.find((u: any) => u.id === userId);
   if (!user) {
     return res.status(401).json({ error: "User not found" });
@@ -803,8 +818,8 @@ app.get("/api/auth/me", (req, res) => {
 });
 
 // API: Articles & Feed (with advanced timeframe and custom sorting)
-app.get("/api/articles", (req, res) => {
-  const db = loadDB();
+app.get("/api/articles", async (req, res) => {
+  const db = await loadDB();
   const { category, search, relevance, timeframe, sortBy } = req.query;
   let result = [...db.articles];
 
@@ -886,8 +901,8 @@ app.get("/api/articles", (req, res) => {
   res.json(result);
 });
 
-app.get("/api/articles/:id", (req, res) => {
-  const db = loadDB();
+app.get("/api/articles/:id", async (req, res) => {
+  const db = await loadDB();
   const article = db.articles.find(a => a.id === req.params.id);
   if (!article) {
     return res.status(404).json({ error: "Article not found" });
@@ -921,8 +936,8 @@ app.get("/api/articles/:id", (req, res) => {
 });
 
 // Categories aggregations
-app.get("/api/categories", (req, res) => {
-  const db = loadDB();
+app.get("/api/categories", async (req, res) => {
+  const db = await loadDB();
   const counts: Record<string, number> = {};
   db.articles.forEach(a => {
     counts[a.category] = (counts[a.category] || 0) + 1;
@@ -931,8 +946,8 @@ app.get("/api/categories", (req, res) => {
 });
 
 // API: Daily 15-Minute Briefing
-app.get("/api/daily-brief", (req, res) => {
-  const db = loadDB();
+app.get("/api/daily-brief", async (req, res) => {
+  const db = await loadDB();
   // Filter articles with priority Very High, High, Medium, relevance >= 7, limited to top 10
   const sortedArticles = [...db.articles]
     .filter(a => a.relevanceScore >= 7)
@@ -956,25 +971,25 @@ app.get("/api/daily-brief", (req, res) => {
 });
 
 // API: Bookmarks
-app.get("/api/bookmarks", (req, res) => {
+app.get("/api/bookmarks", async (req, res) => {
   const userId = getUserIdFromReq(req);
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-  const db = loadDB();
+  const db = await loadDB();
   const userBookmarks = db.bookmarks.filter(b => b.userId === userId);
   const bookmarkedArticles = db.articles.filter(a => userBookmarks.some(ub => ub.articleId === a.id));
 
   res.json(bookmarkedArticles);
 });
 
-app.post("/api/bookmarks/toggle", (req, res) => {
+app.post("/api/bookmarks/toggle", async (req, res) => {
   const userId = getUserIdFromReq(req);
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
   const { articleId } = req.body;
   if (!articleId) return res.status(400).json({ error: "articleId is required" });
 
-  const db = loadDB();
+  const db = await loadDB();
   const index = db.bookmarks.findIndex(b => b.userId === userId && b.articleId === articleId);
 
   let status = "added";
@@ -995,11 +1010,11 @@ app.post("/api/bookmarks/toggle", (req, res) => {
 });
 
 // API: Revision Cards
-app.get("/api/revision", (req, res) => {
+app.get("/api/revision", async (req, res) => {
   const userId = getUserIdFromReq(req);
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-  const db = loadDB();
+  const db = await loadDB();
   const rCards = db.revision_cards.filter(c => c.userId === userId);
   
   // Join article metadata for easy client UI listing
@@ -1016,14 +1031,14 @@ app.get("/api/revision", (req, res) => {
   res.json(detailedRCards);
 });
 
-app.post("/api/revision/save", (req, res) => {
+app.post("/api/revision/save", async (req, res) => {
   const userId = getUserIdFromReq(req);
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
   const { articleId, notes } = req.body;
   if (!articleId) return res.status(400).json({ error: "articleId is required" });
 
-  const db = loadDB();
+  const db = await loadDB();
   const art = db.articles.find(a => a.id === articleId);
   if (!art) return res.status(400).json({ error: "Article not found" });
 
@@ -1049,12 +1064,12 @@ app.post("/api/revision/save", (req, res) => {
   res.json({ success: true });
 });
 
-app.post("/api/revision/toggle-revised", (req, res) => {
+app.post("/api/revision/toggle-revised", async (req, res) => {
   const userId = getUserIdFromReq(req);
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
   const { cardId } = req.body;
-  const db = loadDB();
+  const db = await loadDB();
   const card = db.revision_cards.find(c => c.id === cardId && c.userId === userId);
   if (!card) return res.status(404).json({ error: "Card not found" });
 
@@ -1066,12 +1081,12 @@ app.post("/api/revision/toggle-revised", (req, res) => {
   res.json(card);
 });
 
-app.post("/api/revision/delete", (req, res) => {
+app.post("/api/revision/delete", async (req, res) => {
   const userId = getUserIdFromReq(req);
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
   const { cardId } = req.body;
-  const db = loadDB();
+  const db = await loadDB();
   const idx = db.revision_cards.findIndex(c => c.id === cardId && c.userId === userId);
   if (idx === -1) return res.status(404).json({ error: "Card not found" });
 
@@ -1081,8 +1096,8 @@ app.post("/api/revision/delete", (req, res) => {
 });
 
 // API: MCQs
-app.get("/api/mcqs", (req, res) => {
-  const db = loadDB();
+app.get("/api/mcqs", async (req, res) => {
+  const db = await loadDB();
   const mcqs = db.articles
     .filter(a => a.mcq)
     .map(a => a.mcq);
@@ -1152,7 +1167,7 @@ const pyqQuestions = [
 ];
 
 // Get PYQ Index
-app.get("/api/pyqs", (req, res) => {
+app.get("/api/pyqs", async (req, res) => {
   res.json(pyqQuestions);
 });
 
@@ -1230,12 +1245,12 @@ app.post("/api/pyq/evaluate", async (req, res) => {
 // REAL-TIME ANALYTICS LEDGER & PIPELINE
 // ==========================================
 // Records clicks, search entries, retention loops, and revision saves directly
-app.post("/api/analytics/track", (req, res) => {
+app.post("/api/analytics/track", async (req, res) => {
   const { eventType, eventData } = req.body;
   if (!eventType) return res.status(400).json({ error: "eventType required" });
 
   const userId = getUserIdFromReq(req) || "anonymous-officer";
-  const db = loadDB();
+  const db = await loadDB();
 
   if (!db.analytics) {
     db.analytics = {
@@ -1279,8 +1294,8 @@ app.post("/api/analytics/track", (req, res) => {
 });
 
 // Aggregate Analytics Summary for live UI Charts
-app.get("/api/analytics/dashboard", (req, res) => {
-  const db = loadDB();
+app.get("/api/analytics/dashboard", async (req, res) => {
+  const db = await loadDB();
   if (!db.analytics) {
     db.analytics = {
       search_events: [],
@@ -1362,7 +1377,7 @@ app.get("/api/analytics/dashboard", (req, res) => {
 // PROGRESSIVE WEB APP & SEARCH INDEX UTILS
 // ==========================================
 // Serve manifest file
-app.get("/manifest.json", (req, res) => {
+app.get("/manifest.json", async (req, res) => {
   res.json({
     name: "OfficerAI UPSC Current Affairs Syllabus Engine",
     short_name: "OfficerAI",
@@ -1391,7 +1406,7 @@ app.get("/manifest.json", (req, res) => {
 });
 
 // High-contrast clean brand SVGs for launcher icons (PWA compatibility tool)
-app.get("/icon-192.png", (req, res) => {
+app.get("/icon-192.png", async (req, res) => {
   res.setHeader("Content-Type", "image/svg+xml");
   res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
     <rect width="100%" height="100%" fill="#0D9488" rx="42" />
@@ -1400,7 +1415,7 @@ app.get("/icon-192.png", (req, res) => {
   </svg>`);
 });
 
-app.get("/icon-512.png", (req, res) => {
+app.get("/icon-512.png", async (req, res) => {
   res.setHeader("Content-Type", "image/svg+xml");
   res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
     <rect width="100%" height="100%" fill="#0D9488" rx="110" />
@@ -1410,7 +1425,7 @@ app.get("/icon-512.png", (req, res) => {
 });
 
 // Apple Dynamic Touch Splash Icons
-app.get("/apple-touch-icon.png", (req, res) => {
+app.get("/apple-touch-icon.png", async (req, res) => {
   res.setHeader("Content-Type", "image/svg+xml");
   res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
     <rect width="100%" height="100%" fill="#115E59" rx="38" />
@@ -1419,7 +1434,7 @@ app.get("/apple-touch-icon.png", (req, res) => {
 });
 
 // Offline Service Worker with stale-while-revalidate and full local backup cache
-app.get("/sw.js", (req, res) => {
+app.get("/sw.js", async (req, res) => {
   res.setHeader("Content-Type", "application/javascript");
   res.send(`
     const CACHE_NAME = "officerai-v1";
@@ -1496,8 +1511,8 @@ app.get("/sw.js", (req, res) => {
 });
 
 // Sitemap.xml dynamic crawler mapping
-app.get("/sitemap.xml", (req, res) => {
-  const db = loadDB();
+app.get("/sitemap.xml", async (req, res) => {
+  const db = await loadDB();
   const siteUrl = (req.protocol + "://" + req.get("host")).replace(/\/$/, "");
   const today = new Date().toISOString().split("T")[0];
 
@@ -1565,7 +1580,7 @@ app.get("/sitemap.xml", (req, res) => {
 });
 
 // Robots.txt indexing directive setup
-app.get("/robots.txt", (req, res) => {
+app.get("/robots.txt", async (req, res) => {
   const siteUrl = (req.protocol + "://" + req.get("host")).replace(/\/$/, "");
   res.setHeader("Content-Type", "text/plain");
   res.send(`User-agent: *
@@ -1671,7 +1686,7 @@ app.get(seoFriendlyPaths, (req, res, next) => {
   const baseDomain = (req.protocol + "://" + req.get("host")).replace(/\/$/, "");
   const pageUrl = baseDomain + req.originalUrl;
 
-  const db = loadDB();
+  const db = await loadDB();
   let pageTitle = "OfficerAI UPSC Current Affairs Syllabus Engine | PIB, MEA, NITI Aayog summaries";
   let pageDescription = "Explore high-yield, premium UPSC current affairs summaries. Core constitutional links, critical GS Paper prelims facts, and AI-evaluated Practice MCQs.";
   let ogType = "website";
@@ -2402,7 +2417,7 @@ async function processRawArticleThroughGemini(title: string, rawContent: string,
 
 // API Triggering active feed ingestion
 app.post("/api/admin/ingest", async (req, res) => {
-  const db = loadDB();
+  const db = await loadDB();
   const logs = db.ingestion_logs || [];
   
   // Adaptive initialization/sync of expanded sources in direct DB memory database
@@ -2635,22 +2650,22 @@ app.post("/api/admin/ingest", async (req, res) => {
 });
 
 // Admin: Get ingestion logs
-app.get("/api/admin/logs", (req, res) => {
-  const db = loadDB();
+app.get("/api/admin/logs", async (req, res) => {
+  const db = await loadDB();
   res.json(db.ingestion_logs || []);
 });
 
 // Admin: Get and manage sources
-app.get("/api/admin/sources", (req, res) => {
-  const db = loadDB();
+app.get("/api/admin/sources", async (req, res) => {
+  const db = await loadDB();
   res.json(db.sources || []);
 });
 
-app.post("/api/admin/sources", (req, res) => {
+app.post("/api/admin/sources", async (req, res) => {
   const { name, type, url, priority } = req.body;
   if (!name || !url) return res.status(400).json({ error: "Name and URL are required" });
 
-  const db = loadDB();
+  const db = await loadDB();
   const newSource = {
     id: "src-" + crypto.randomUUID().substring(0, 8),
     name,
@@ -2672,7 +2687,7 @@ app.post("/api/admin/articles/add", async (req, res) => {
   }
 
   try {
-    const db = loadDB();
+    const db = await loadDB();
     const hash = crypto.createHash("md5").update(title).digest("hex");
     if (db.articles.some((a: any) => a.articleHash === hash)) {
       return res.status(400).json({ error: "An article with this exact title already exists" });
@@ -2762,7 +2777,7 @@ app.post("/api/admin/articles/add", async (req, res) => {
 // Admin: Override score or regenerate AI summary
 app.post("/api/admin/articles/:id/override", async (req, res) => {
   const { relevanceScore, regenerate } = req.body;
-  const db = loadDB();
+  const db = await loadDB();
   const idx = db.articles.findIndex(a => a.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: "Article not found" });
 
@@ -2812,90 +2827,129 @@ app.post("/api/admin/articles/:id/override", async (req, res) => {
 });
 
 // Search Endpoint (Fuzzy keyword lookups with transparency, suggestions, and trending counters)
-app.get("/api/search", (req, res) => {
-  const db = loadDB();
+app.get("/api/search", async (req, res) => {
   const qStr = (req.query.q || "").toString().trim();
-  if (!qStr) return res.json({ articles: [], mcqs: [], suggestions: [], trending: ["Paris Agreement", "DPDP Act", "Green Hydrogen", "ISRO", "PM-PRANAM"] });
+  const source = (req.query.source || "").toString().trim();
+  const dateFrom = (req.query.dateFrom || "").toString().trim();
+  const dateTo = (req.query.dateTo || "").toString().trim();
+  const minScore = parseFloat((req.query.minScore || "7").toString());
 
-  searchQueriesLog.push({ query: qStr, timestamp: new Date() });
-
-  const entitiesPool = [
-    { name: "ISRO", keywords: ["isro", "insat", "gslv", "satellite", "space"] },
-    { name: "Gaganyaan", keywords: ["gaganya", "manned", "spaceflight", "astronaut"] },
-    { name: "Chandrayaan", keywords: ["chandray", "moon", "lunar", "south pole"] },
-    { name: "IN-SPACe", keywords: ["in-space", "private space", "reform"] },
-    { name: "Paris Agreement", keywords: ["paris", "cop21", "climate treaty", "nationally determined"] },
-    { name: "DPDP Act", keywords: ["dpdp", "personal data", "privacy", "protection", "board"] },
-    { name: "PM-PRANAM", keywords: ["pranam", "fertilizer", "soil", "chemical"] },
-    { name: "NITI Aayog", keywords: ["niti", "planning", "state health", "cooperative federalism"] },
-    { name: "Green Hydrogen", keywords: ["green hydrogen", "electrolysis", "clean fuel", "sight"] }
-  ];
-
-  // Weighted ranking fuzzy scorer
-  const matchedArticles = db.articles.map((a: any) => {
-    let matchScore = 0;
-    matchScore += computeFuzzyScore(a.title, qStr) * 4;
-    matchScore += computeFuzzyScore(a.content, qStr);
-    matchScore += computeFuzzyScore(a.category, qStr) * 2;
-    matchScore += a.tags.reduce((acc: number, t: string) => acc + (t.toLowerCase().includes(qStr.toLowerCase()) ? 12 : 0), 0);
-
-    if (a.summary) {
-      matchScore += computeFuzzyScore(a.summary.whatHappened, qStr) * 2;
-      matchScore += computeFuzzyScore(a.summary.constitutionalLinks, qStr) * 1.5;
-      matchScore += computeFuzzyScore(a.summary.prelimsFacts, qStr) * 1.5;
-    }
-
-    return { ...a, matchScore };
-  })
-  .filter((a: any) => a.matchScore > 0)
-  .sort((a: any, b: any) => b.matchScore - a.matchScore);
-
-  // Auto-complete match suggestions
-  const suggestions = entitiesPool
-    .filter(e => e.keywords.some(k => k.includes(qStr.toLowerCase())) || e.name.toLowerCase().includes(qStr.toLowerCase()))
-    .map(e => e.name);
-
-  // Recalculate trending in last hour
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const recentQueries = searchQueriesLog.filter(s => s.timestamp > oneHourAgo);
-  const freqMap: Record<string, number> = {};
-  recentQueries.forEach(s => {
-    freqMap[s.query] = (freqMap[s.query] || 0) + 1;
-  });
-  const trending = Object.entries(freqMap)
-    .sort((a, b) => b[1] - a[1])
-    .map(([term]) => term)
-    .slice(0, 5);
-
-  if (trending.length === 0) {
-    trending.push("Paris Agreement", "DPDP Act", "Green Hydrogen", "ISRO", "PM-PRANAM");
+  const defaultTrending = ["Paris Agreement", "DPDP Act", "Green Hydrogen", "ISRO", "PM-PRANAM"];
+  if (!qStr && !source && !dateFrom && !dateTo) {
+    return res.json({ articles: [], mcqs: [], suggestions: [], trending: defaultTrending });
   }
 
-  // MCQs matching query
-  const mcqs = db.articles
-    .filter((a: any) => a.mcq && (a.mcq.question.toLowerCase().includes(qStr.toLowerCase()) || a.mcq.explanation.toLowerCase().includes(qStr.toLowerCase())))
-    .map((a: any) => a.mcq);
+  if (qStr) searchQueriesLog.push({ query: qStr, timestamp: new Date() });
 
-  // Extract matched metadata
-  const matchedCategories = Array.from(new Set(matchedArticles.map((a: any) => a.category)));
-  const matchedSources = Array.from(new Set(matchedArticles.map((a: any) => a.source)));
-  const matchedEntities = entitiesPool
-    .filter(e => qStr.toLowerCase().includes(e.name.toLowerCase()) || e.keywords.some(k => qStr.toLowerCase().includes(k)))
-    .map(e => e.name);
+  let matchedArticles: any[] = [];
+
+  // ── MongoDB Atlas text search (when connected) ─────────────────────────────
+  if (mongoReady) {
+    try {
+      const mDb = await connectMongo();
+      const col = mDb.collection("articles");
+      const mongoFilter: any = { relevanceScore: { $gte: minScore } };
+      if (source) mongoFilter.source = { $regex: source, $options: "i" };
+      if (dateFrom || dateTo) {
+        mongoFilter.ingestionTimestamp = {};
+        if (dateFrom) mongoFilter.ingestionTimestamp.$gte = new Date(dateFrom).toISOString();
+        if (dateTo) mongoFilter.ingestionTimestamp.$lte = new Date(dateTo + "T23:59:59Z").toISOString();
+      }
+
+      if (qStr) {
+        // Try MongoDB Atlas text search first
+        try {
+          const textResults = await col
+            .find({ $text: { $search: qStr }, ...mongoFilter })
+            .sort({ score: { $meta: "textScore" }, relevanceScore: -1 })
+            .limit(50)
+            .toArray();
+          matchedArticles = textResults.map(({ _id, ...rest }: any) => rest);
+        } catch (_textErr) {
+          // Text index may not exist yet — fall back to regex search
+          const regexFilter = {
+            ...mongoFilter,
+            $or: [
+              { title: { $regex: qStr, $options: "i" } },
+              { content: { $regex: qStr, $options: "i" } },
+              { category: { $regex: qStr, $options: "i" } },
+              { tags: { $elemMatch: { $regex: qStr, $options: "i" } } },
+              { "summary.whatHappened": { $regex: qStr, $options: "i" } },
+              { "summary.constitutionalLinks": { $regex: qStr, $options: "i" } },
+              { source: { $regex: qStr, $options: "i" } },
+            ],
+          };
+          const regexResults = await col.find(regexFilter).sort({ relevanceScore: -1 }).limit(50).toArray();
+          matchedArticles = regexResults.map(({ _id, ...rest }: any) => rest);
+        }
+      } else {
+        // No query — just filter by source/date/score
+        const results = await col.find(mongoFilter).sort({ ingestionTimestamp: -1 }).limit(80).toArray();
+        matchedArticles = results.map(({ _id, ...rest }: any) => rest);
+      }
+    } catch (err) {
+      console.error("[Search] MongoDB search error — falling back to in-memory:", err);
+      matchedArticles = [];
+    }
+  }
+
+  // ── In-memory fuzzy fallback (when MongoDB is down or returned 0 results) ──
+  if (matchedArticles.length === 0 && qStr) {
+    const db = await loadDB();
+    matchedArticles = db.articles
+      .filter((a: any) => {
+        if (a.relevanceScore < minScore) return false;
+        if (source && !a.source.toLowerCase().includes(source.toLowerCase())) return false;
+        if (dateFrom && new Date(a.ingestionTimestamp) < new Date(dateFrom)) return false;
+        if (dateTo && new Date(a.ingestionTimestamp) > new Date(dateTo + "T23:59:59Z")) return false;
+        return true;
+      })
+      .map((a: any) => {
+        let score = 0;
+        score += computeFuzzyScore(a.title, qStr) * 4;
+        score += computeFuzzyScore(a.content, qStr);
+        score += computeFuzzyScore(a.category, qStr) * 2;
+        score += (a.tags || []).reduce((acc: number, t: string) => acc + (t.toLowerCase().includes(qStr.toLowerCase()) ? 12 : 0), 0);
+        if (a.summary) {
+          score += computeFuzzyScore(a.summary.whatHappened, qStr) * 2;
+          score += computeFuzzyScore(a.summary.constitutionalLinks, qStr) * 1.5;
+        }
+        return { ...a, matchScore: score };
+      })
+      .filter((a: any) => a.matchScore > 0)
+      .sort((a: any, b: any) => b.matchScore - a.matchScore);
+  }
+
+  // ── MCQs matching query ────────────────────────────────────────────────────
+  const mcqs = qStr
+    ? matchedArticles
+        .filter((a: any) => a.mcq && (
+          (a.mcq.question || "").toLowerCase().includes(qStr.toLowerCase()) ||
+          (a.mcq.explanation || "").toLowerCase().includes(qStr.toLowerCase())
+        ))
+        .map((a: any) => a.mcq)
+    : [];
+
+  // ── Trending ───────────────────────────────────────────────────────────────
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const freqMap: Record<string, number> = {};
+  searchQueriesLog.filter(s => s.timestamp > oneHourAgo).forEach(s => {
+    freqMap[s.query] = (freqMap[s.query] || 0) + 1;
+  });
+  const trending = Object.entries(freqMap).sort((a, b) => b[1] - a[1]).map(([t]) => t).slice(0, 5);
+  if (trending.length === 0) trending.push(...defaultTrending);
 
   res.json({
-    articles: matchedArticles,
-    mcqs,
-    suggestions: Array.from(new Set([...suggestions, ...trending])).slice(0, 8),
+    articles: matchedArticles.slice(0, 60),
+    mcqs: mcqs.slice(0, 10),
+    suggestions: [],
     trending,
     debugging: {
       searchedFields: ["title", "content", "category", "tags", "summary.whatHappened", "summary.constitutionalLinks"],
-      matchedEntities,
-      matchedCategories,
-      matchedSources,
+      engine: mongoReady ? "MongoDB Atlas" : "In-memory fuzzy",
       hitCounts: matchedArticles.length,
-      indexingHealth: "MONITORING_ACTIVE"
-    }
+      indexingHealth: mongoReady ? "ATLAS_ACTIVE" : "LOCAL_FALLBACK",
+    },
   });
 });
 
@@ -2929,7 +2983,7 @@ if (process.env.NODE_ENV !== "production") {
   const distPath = path.join(process.cwd(), "dist");
   app.use(express.static(distPath));
   
-  app.get("*", (req, res) => {
+  app.get("*", async (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 
