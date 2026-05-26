@@ -34,6 +34,13 @@ import {
 // ==========================================
 import { User, Article, IngestionLog, Source, RevisionCard } from './types.ts';
 
+// ==========================================
+// MODULAR REACT COMPONENTS
+// ==========================================
+import ArticleDetail from './components/ArticleDetail.tsx';
+import PYQDesk from './components/PYQDesk.tsx';
+import AdminPortal from './components/AdminPortal.tsx';
+
 type AppTab = 'home' | 'search' | 'brief' | 'revision' | 'bookmarks' | 'admin';
 
 export default function App() {
@@ -46,6 +53,11 @@ export default function App() {
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+
+  // Expanded Premium Auth States
+  const [authMethod, setAuthMethod] = useState<'credentials' | 'otp' | 'google'>('credentials');
+  const [otpStep, setOtpStep] = useState<'send' | 'verify'>('send');
+  const [otpCode, setOtpCode] = useState('');
 
   // Global UI State
   const [currentTab, setCurrentTab] = useState<AppTab>('home');
@@ -72,6 +84,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [minRelevance, setMinRelevance] = useState<number>(7);
   const [newsQuery, setNewsQuery] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [timeframe, setTimeframe] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
 
@@ -585,32 +598,151 @@ export default function App() {
     e.preventDefault();
     setAuthError('');
     setAuthLoading(true);
-    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
-    const payload = authMode === 'login' 
-      ? { email: authEmail, password: authPassword }
-      : { name: authName, email: authEmail, password: authPassword };
 
     try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed');
+      if (authMethod === 'credentials') {
+        const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+        const payload = authMode === 'login' 
+          ? { email: authEmail, password: authPassword, method: 'Credentials' }
+          : { name: authName, email: authEmail, password: authPassword, method: 'Credentials' };
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Authentication credentials failed');
+        }
+        localStorage.setItem('officer_token', data.token);
+        setToken(data.token);
+        setUser(data.user);
+        resetAuthFields();
+      } else if (authMethod === 'otp') {
+        if (otpStep === 'send') {
+          // Send OTP handshake
+          const res = await fetch('/api/auth/otp-send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emailOrMobile: authEmail })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to send OTP verification');
+          }
+          setOtpStep('verify');
+          // Prefill simulated code to guide candidate
+          setOtpCode(data.code || '123456');
+        } else {
+          // Verify OTP challenge
+          const res = await fetch('/api/auth/otp-verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              emailOrMobile: authEmail,
+              code: otpCode,
+              name: authMode === 'register' ? authName : undefined,
+              method: authEmail.includes('@') ? 'Email OTP' : 'Mobile OTP'
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Verification code invalid');
+          }
+          localStorage.setItem('officer_token', data.token);
+          setToken(data.token);
+          setUser(data.user);
+          resetAuthFields();
+        }
       }
-      localStorage.setItem('officer_token', data.token);
-      setToken(data.token);
-      setUser(data.user);
-      setAuthEmail('');
-      setAuthPassword('');
-      setAuthName('');
     } catch (err: any) {
       setAuthError(err.message || 'Something went wrong');
     } finally {
       setAuthLoading(false);
     }
+  };
+
+  const handleGoogleLogin = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      // Direct Unified Google Sign In integration mapping
+      const targetEmail = authEmail || "google.aspirant@lbsnaa.gov.in";
+      const targetName = authName || "Officer Trainee";
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: targetEmail,
+          name: targetName
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Google Sign In rejected by server');
+      }
+      localStorage.setItem('officer_token', data.token);
+      setToken(data.token);
+      setUser(data.user);
+      resetAuthFields();
+    } catch (err: any) {
+      setAuthError(err.message || 'Google handshake failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleQuickDemoLogin = async () => {
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'officer.trainee@lbsnaa.gov.in',
+          name: 'Officer Trainee (IAS Sandbox)',
+          password: 'sandbox_passcode_2026',
+          method: 'Instant Sandbox'
+        })
+      });
+      let data = await res.json();
+      if (!res.ok) {
+        // If already exists, just handle login
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'officer.trainee@lbsnaa.gov.in',
+            password: 'sandbox_passcode_2026'
+          })
+        });
+        data = await loginRes.json();
+        if (!loginRes.ok) {
+          throw new Error('Sandbox credentials outdated or rejected');
+        }
+      }
+      localStorage.setItem('officer_token', data.token);
+      setToken(data.token);
+      setUser(data.user);
+      resetAuthFields();
+    } catch (err: any) {
+      setAuthError('Instant sandbox entry failed: ' + err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const resetAuthFields = () => {
+    setAuthEmail('');
+    setAuthPassword('');
+    setAuthName('');
+    setOtpCode('');
+    setOtpStep('send');
+    const el = document.getElementById('auth-overlay-modal');
+    if (el) el.classList.add('hidden');
   };
 
   const handleLogout = () => {
@@ -884,147 +1016,159 @@ export default function App() {
   };
 
   return (
-    <div id="officer-ai-app" className="min-h-screen flex flex-col font-sans bg-[#FBFBFA] text-[#1C1917] max-w-lg mx-auto md:max-w-4xl shadow-2xl relative border-x border-[#E7E5E4] pb-24 md:pb-8">
+    <div id="officer-ai-app" className="min-h-screen flex flex-col lg:flex-row font-sans bg-[#FCFBF9] text-[#1C1917] w-full">
       
-      {/* HEADER SECTION (Optimized for space and scannability) */}
-      <header id="app-header" className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E7E5E4] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          {/* Brutalist icon box represent UPSC integrity */}
-          <div className="bg-[#1C1917] text-white p-1.5 font-bold tracking-tighter text-sm flex items-center justify-center rounded">
-            OAI
-          </div>
-          <div>
-            <h1 className="text-lg font-extrabold tracking-tight font-display text-[#1C1917] flex items-center gap-1">
-              OfficerAI <span className="text-xs text-[#0F766E] uppercase font-mono tracking-widest bg-[#EEF2F6] px-1.5 py-0.5 rounded leading-none">UPSC</span>
+      {/* LIGHTWEIGHT SIDEBAR NAVIGATION (DESKTOP) */}
+      <aside className="hidden lg:flex flex-col w-64 bg-[#FAF9F6] border-r border-[#E7E5E4]/60 p-6 justify-between select-none shrink-0 h-screen sticky top-0">
+        <div className="space-y-8">
+          <div className="space-y-1">
+            <h1 className="text-xl font-bold font-display tracking-tight text-[#1C1917] flex items-center gap-1.5">
+              OfficerAI <span className="text-[9px] text-[#0F766E] uppercase font-mono tracking-widest bg-teal-50 border border-teal-150 px-1.5 py-0.5 rounded leading-none font-bold">UPSC</span>
             </h1>
-            <p className="text-[10px] font-mono text-[#78716C]">Syllabus Intelligence Engine</p>
+            <p className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider">Syllabus Intelligence OS</p>
           </div>
+
+          <nav className="space-y-1.5">
+            {[
+              { tab: 'home', label: 'Intelligence Feed', icon: Compass },
+              { tab: 'search', label: 'Syllabus Query', icon: SearchIcon },
+              { tab: 'brief', label: 'Daily 15m Brief', icon: TrendingUp },
+              { tab: 'revision', label: 'Revision Sandbox', icon: CheckSquare },
+              { tab: 'bookmarks', label: 'Pinned Materials', icon: BookmarkIcon },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isSelected = currentTab === item.tab;
+              return (
+                <button
+                  key={item.tab}
+                  onClick={() => {
+                    setCurrentTab(item.tab as AppTab);
+                    if (item.tab === 'search') {
+                      setTimeout(() => {
+                        const el = document.getElementById('search-bar-input');
+                        if (el) el.focus();
+                      }, 100);
+                    }
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#1C1917] text-white'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/40'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* User state element */}
-        <div className="flex items-center space-x-2">
-          {user ? (
-            <div className="flex items-center space-x-2 text-right">
-              <span className="hidden md:inline text-xs font-semibold text-[#44403C]">
-                {user.name}
-              </span>
+        <div className="space-y-4">
+          <div className="pt-4 border-t border-[#E7E5E4]/60 flex items-center justify-between">
+            {user ? (
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-700 font-mono text-xs font-bold leading-none shrink-0 font-bold">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 pr-1 text-left">
+                  <p className="text-[11px] font-bold text-[#1C1917] truncate leading-tight">{user.name}</p>
+                  <button onClick={handleLogout} className="text-[10px] text-stone-400 hover:text-rose-700 transition font-mono leading-none cursor-pointer">Log Out</button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  const el = document.getElementById('auth-overlay-modal');
+                  if (el) el.classList.remove('hidden');
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-1.5 border border-[#1C1917] hover:bg-[#1C1917] hover:text-white rounded-md text-xs font-bold font-mono uppercase transition cursor-pointer bg-white"
+              >
+                <Lock className="w-3 h-3" /> Access Space
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={() => setCurrentTab('admin')}
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-[10.5px] font-mono font-bold tracking-tight border border-dashed rounded-md transition-colors cursor-pointer ${
+              currentTab === 'admin'
+                ? 'border-[#0F766E] text-[#0F766E] bg-teal-50/50'
+                : 'border-[#E7E5E4] text-[#78716C] hover:text-[#1C1917] hover:border-stone-400'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Admin Control Panel</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* RIGHT WORKSPACE CONTEXT FRAME */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        {/* MOBILE TOP BAR (HIDDEN ON DESKTOP) */}
+        <header id="mobile-app-header" className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E7E5E4] px-4 py-3 flex items-center justify-between shrink-0 select-none">
+          <h1 className="text-base font-bold font-display text-[#1C1917] flex items-center gap-1">
+            OfficerAI <span className="text-[9px] text-[#0F766E] uppercase font-mono tracking-widest bg-teal-50 border border-teal-100 px-1 py-0.2 rounded font-extrabold leading-none">UPSC</span>
+          </h1>
+          <div className="flex items-center space-x-2">
+            {user ? (
               <button 
-                id="btn-logout"
+                id="btn-logout-mobile"
                 onClick={handleLogout}
-                className="text-[10px] text-red-700 bg-red-50 hover:bg-red-100 font-bold border border-red-200 px-2.5 py-1 rounded transition-colors cursor-pointer"
+                className="text-[10px] text-stone-500 bg-stone-105 border border-stone-200 px-2.5 py-1 rounded transition cursor-pointer font-bold font-mono uppercase"
               >
                 Sign Out
               </button>
-            </div>
-          ) : (
-            <button
-              id="btn-trigger-auth-tab"
-              onClick={() => {
-                // If not logged in, trigger clean auth modal overlay
-                const el = document.getElementById('auth-overlay-modal');
-                if (el) el.classList.remove('hidden');
-              }}
-              className="flex items-center space-x-1 text-xs bg-[#1C1917] hover:bg-[#2E2A27] text-white font-semibold py-1.5 px-3 rounded-md transition-colors shadow-sm cursor-pointer"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Sign In</span>
-            </button>
-          )}
-
-          {/* Hidden Admin Access Trigger for premium users */}
-          {user && (
-            <button
-              id="btn-nav-admin"
-              onClick={() => setCurrentTab('admin')}
-              className={`p-1.5 rounded transition bg-[#F5F5F4] hover:bg-[#E7E5E4] ${currentTab === 'admin' ? 'border-2 border-[#0F766E]' : 'border border-[#E7E5E4]'}`}
-              title="Admin Portal"
-            >
-              <Settings className="w-4 h-4 text-[#44403C]" />
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* GLOBAL FEED STATUS BAR */}
-      {currentTab === 'home' && (
-        <div className="space-y-0">
-          {/* Real-time Global Ingestion Status Bar */}
-          <div id="global-live-feed-status-bar" className="bg-[#FAF9F6] border-b border-[#E7E5E4] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-stone-900 transition-all duration-300">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-[10px] font-mono font-bold text-emerald-800 tracking-wider uppercase">
-                UPSC Live Sync
-              </span>
-              <span className="text-stone-300 mx-1">|</span>
-              <span className="text-[12px] text-stone-700 font-sans font-medium">
-                <strong>{liveIndexedToday}</strong> UPSC-relevant intelligence updates indexed today
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-4 text-xs font-mono text-stone-500">
-              <span>Active feeds: <strong className="text-[#0F766E] font-semibold">{liveActiveFeeds}</strong></span>
-              <span className="text-stone-300">•</span>
-              <span>Last refresh: <strong className="text-stone-700 font-semibold">{liveLastSync ? new Date(liveLastSync).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit', second:'2-digit'}) : 'Just now'}</strong></span>
-            </div>
+            ) : (
+              <button
+                id="btn-trigger-auth-tab-mobile"
+                onClick={() => {
+                  const el = document.getElementById('auth-overlay-modal');
+                  if (el) el.classList.remove('hidden');
+                }}
+                className="text-xs bg-[#1C1917] hover:bg-[#2E2A27] text-white font-bold py-1 px-2.5 rounded transition cursor-pointer text-[10px] font-mono uppercase"
+              >
+                Sign In
+              </button>
+            )}
+            {user && (
+              <button
+                onClick={() => setCurrentTab('admin')}
+                className={`p-1 rounded transition bg-[#F5F5F4] hover:bg-[#E7E5E4] cursor-pointer ${
+                  currentTab === 'admin' ? 'border border-[#0F766E] text-teal-805 bg-teal-55' : 'border border-[#E7E5E4]'
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
+        </header>
 
-          {showInstallBanner && (
-            <div id="pwa-install-banner" className="bg-teal-50 border-b border-teal-200 px-4 py-3 flex items-center justify-between gap-3 text-stone-900 transition-all duration-300">
-              <div className="flex items-start gap-2.5">
-                <span className="bg-teal-600 text-white font-mono font-bold text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 mt-0.5">
-                  Mobile App Active
-                </span>
-                <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-teal-950">Add OfficerAI LBSNAA workspace to your device</p>
-                  <p className="text-[10.5px] leading-relaxed text-teal-800">
-                    Saves battery, caches all daily briefs, digests PIB feeds offline, and enables seamless revise anchors.
-                  </p>
-                </div>
+        {/* CONCENTRATED CONTENT INNER SCROLLER */}
+        <div id="main-scroll-container" className="flex-1 overflow-y-auto bg-[#FCFBF9] selection:bg-teal-55">
+          <div className="max-w-3xl mx-auto px-4 py-6 md:py-8 space-y-6">
+
+            {/* Premium Editorial Masthead - Centered comfort & negative space */}
+            {currentTab === 'home' && (
+              <div className="py-6 md:py-10 border-b border-stone-200/50 font-sans">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#0F766E] font-bold block mb-2">Gate to the Services</span>
+                <h2 className="text-2xl md:text-3.5xl font-display font-medium tracking-tight text-stone-900 leading-snug mb-3 select-none">
+                  “Everything important for UPSC. Nothing extra.”
+                </h2>
+                <p className="text-stone-500 font-sans text-xs md:text-sm max-w-2xl leading-relaxed">
+                  A calm, offline-ready intelligence workspace delivering high-yield policy insights from official Union Ministry briefs, legislative analysis, and expert columns. Filtered strictly for academic focus.
+                </p>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  id="btn-pwa-banner-install"
-                  onClick={handleTriggerPwaInstall}
-                  className="bg-teal-700 hover:bg-teal-850 text-white text-[11px] font-bold px-3 py-1 rounded cursor-pointer transition whitespace-nowrap font-mono uppercase"
-                >
-                  Install Hub
-                </button>
-                <button
-                  id="btn-pwa-banner-dismiss"
-                  onClick={handleDismissPwaBanner}
-                  className="text-teal-900 hover:text-stone-950 hover:bg-teal-150 p-1 rounded text-xs font-mono font-bold cursor-pointer transition px-1.5"
-                  title="Dismiss alert"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
+            )}
 
-          <div id="promotional-banner" className="bg-[#1C1917] text-white px-4 py-4 md:py-6 border-b border-[#2E2A27] flex flex-col gap-2 relative overflow-hidden">
-          <div className="absolute right-0 bottom-0 opacity-10 font-black font-display text-7xl translate-y-4 translate-x-4 pointer-events-none uppercase">IAS</div>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#0F766E] font-bold">LBSNAA Gateway</span>
-          <h2 className="text-xl md:text-2xl font-bold tracking-tight font-display">
-            “Everything important for UPSC. Nothing extra.”
-          </h2>
-          <p className="text-xs text-[#A8A29E] max-w-lg leading-relaxed">
-            Real-time daily current affairs systematically parsed directly from <strong>PIB, MEA, UN News, and Editorial Analyzers</strong>. Filtered strictly above relevance score threshold 7/10.
-          </p>
-        </div>
-        </div>
-      )}
-
-      {/* ==========================================
-          TAB BODY RENDERS
-         ========================================== */}
-      <main id="main-content-scroll" className="flex-1 p-4 overflow-y-auto space-y-4">
-        
-        {/* TAB 1: HOME FEED */}
-        {currentTab === 'home' && (
-          <div id="view-home-feed" className="space-y-4">
+            {/* ==========================================
+                TAB BODY RENDERS
+               ========================================== */}
+            
+            {/* TAB 1: HOME FEED */}
+            {currentTab === 'home' && (
+              <div id="view-home-feed" className="space-y-6">
             
             {/* SECTIONS CATEGORY ROW badge filter */}
             <div className="space-y-1.5">
@@ -1054,113 +1198,123 @@ export default function App() {
             </div>
 
             {/* QUICK SEARCH & FILTERS CONTROLS */}
-            <div className="bg-white rounded-lg border border-[#E7E5E4] p-3 shadow-sm space-y-3">
-              <div className="flex items-center justify-between gap-2 border-b border-[#F5F5F4] pb-2.5">
-                <span className="text-xs font-bold text-[#1C1917] flex items-center gap-1">
-                  <Filter className="w-3.5 h-3.5 text-[#0F766E]" /> Real-time Syllabus Filter
-                </span>
-                <span className="text-[11px] font-mono text-[#0F766E] bg-teal-50 border border-teal-100 px-2 py-0.5 rounded font-extrabold">
-                  Relevance Score: ≥{minRelevance}/10
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
-                {/* Score Slider */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px] font-semibold text-[#78716C]">
-                    <span>Focus Priority (7+ Highly Policy-focused)</span>
-                    <span className="text-[#1C1917] font-bold">Min: {minRelevance}</span>
-                  </div>
-                  <input
-                    id="relevance-score-range"
-                    type="range"
-                    min="7"
-                    max="10"
-                    step="1"
-                    value={minRelevance}
-                    onChange={(e) => setMinRelevance(parseInt(e.target.value, 10))}
-                    className="w-full accent-[#0F766E] cursor-ew-resize h-1 bg-[#E7E5E4] rounded-lg"
-                  />
-                  <div className="flex justify-between text-[10px] text-[#A8A29E] font-mono">
-                    <span>7: Medium-High Policy</span>
-                    <span>10: Absolute Core IAS Syllabus</span>
-                  </div>
-                </div>
-
+            <div className="bg-white rounded-xl border border-[#E7E5E4] p-3 shadow-none space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2.5 items-center justify-between">
                 {/* Inline filter input widget */}
-                <div className="relative">
-                  <SearchIcon className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-[#A8A29E]" />
+                <div className="relative w-full sm:max-w-md">
+                  <SearchIcon className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[#A8A29E]" />
                   <input
                     id="search-input-inline"
                     type="text"
                     value={newsQuery}
                     onChange={(e) => setNewsQuery(e.target.value)}
-                    placeholder="Quick filter titles or tags..."
-                    className="w-full text-xs pl-8 pr-3 py-2 border border-[#E7E5E4] rounded bg-[#FAFAF9] focus:outline-none focus:border-[#0F766E] focus:bg-white text-[#1C1917]"
+                    placeholder="Search high-yield syllabus topics..."
+                    className="w-full text-xs pl-9 pr-3 py-2 border border-stone-200 rounded-lg bg-stone-50 focus:outline-none focus:border-[#0F766E] focus:bg-white text-[#1C1917] font-sans"
                   />
                   {newsQuery && (
                     <button 
                       onClick={() => setNewsQuery('')}
-                      className="absolute right-2 top-2 text-[10px] hover:text-stone-950 font-mono text-stone-500 bg-stone-100 px-1.5 rounded"
+                      className="absolute right-2.5 top-2 text-[10px] hover:text-stone-950 font-mono text-stone-500 bg-stone-100 px-1.5 rounded"
                     >
                       Clear
                     </button>
                   )}
                 </div>
-              </div>
 
-              {/* Enhanced Timeframe and Custom Sort order selectors */}
-              <div className="pt-2 border-t border-[#F5F5F4] grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Timeframe selector */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] block">Timeframe / Freshness</span>
-                  <div className="grid grid-cols-4 gap-1">
-                    {[
-                      { value: "all", label: "All" },
-                      { value: "today", label: "Today" },
-                      { value: "last7", label: "7 Days" },
-                      { value: "last30", label: "30 Days" }
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setTimeframe(opt.value)}
-                        className={`text-[10.5px] py-1 border rounded cursor-pointer transition font-mono ${
-                          timeframe === opt.value
-                            ? "bg-teal-50 border-[#0F766E] text-[#0F766E] font-bold"
-                            : "bg-[#FAFAF9] border-[#E7E5E4] text-[#78716C] hover:bg-[#F5F5F4]"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sort By selector */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] block">Intel Sort Order</span>
-                  <div className="grid grid-cols-4 gap-1">
-                    {[
-                      { value: "newest", label: "Latest" },
-                      { value: "relevance", label: "Score" },
-                      { value: "editorial", label: "Press" },
-                      { value: "revised", label: "Priority" }
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setSortBy(opt.value)}
-                        className={`text-[10.5px] py-1 border rounded cursor-pointer transition font-mono ${
-                          sortBy === opt.value
-                            ? "bg-stone-950 border-stone-950 text-white font-bold"
-                            : "bg-[#FAFAF9] border-[#E7E5E4] text-[#78716C] hover:bg-[#F5F5F4]"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                      showAdvancedFilters 
+                        ? 'bg-[#1C1917] text-white border-[#1C1917]' 
+                        : 'bg-white hover:bg-[#F5F5F4] text-stone-700 border-stone-200'
+                    }`}
+                  >
+                    <span>⚙️</span>
+                    <span>{showAdvancedFilters ? 'Close Tuner' : 'Tune Filters'}</span>
+                  </button>
+                  <span className="text-[11px] font-mono font-semibold text-[#0F766E] bg-teal-50 border border-teal-100/60 px-2 py-1 rounded">
+                    Relevance: ≥{minRelevance}/10
+                  </span>
                 </div>
               </div>
+
+              {/* Advanced collapsable tuning tray */}
+              {showAdvancedFilters && (
+                <div className="pt-3 border-t border-stone-150 grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in text-left">
+                  {/* Score Slider */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] font-semibold text-[#78716C] uppercase font-mono tracking-wider">
+                      <span>Focus Threshold</span>
+                      <span className="text-[#1C1917] font-bold">Min Score: {minRelevance}</span>
+                    </div>
+                    <input
+                      id="relevance-score-range"
+                      type="range"
+                      min="7"
+                      max="10"
+                      step="1"
+                      value={minRelevance}
+                      onChange={(e) => setMinRelevance(parseInt(e.target.value, 10))}
+                      className="w-full accent-[#0F766E] cursor-ew-resize h-1 bg-[#E7E5E4] rounded-lg mt-1"
+                    />
+                    <div className="flex justify-between text-[9px] text-[#A8A29E] font-mono leading-tight">
+                      <span>7: Policy Focus</span>
+                      <span>10: Core Syllabus</span>
+                    </div>
+                  </div>
+
+                  {/* Timeframe selector */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] font-mono block">Recency Filter</span>
+                    <div className="grid grid-cols-4 gap-1 mt-1">
+                      {[
+                        { value: "all", label: "All" },
+                        { value: "today", label: "Today" },
+                        { value: "last7", label: "7D" },
+                        { value: "last30", label: "30D" }
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setTimeframe(opt.value)}
+                          className={`text-[10px] py-1 border rounded cursor-pointer transition font-mono ${
+                            timeframe === opt.value
+                              ? "bg-[#0F766E] border-[#0F766E] text-white font-bold"
+                              : "bg-[#FAFAF9] border-[#E7E5E4] text-[#78716C] hover:bg-[#F5F5F4]"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sort By selector */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] font-mono block">Sort Intelligence By</span>
+                    <div className="grid grid-cols-4 gap-1 mt-1">
+                      {[
+                        { value: "newest", label: "Latest" },
+                        { value: "relevance", label: "Score" },
+                        { value: "editorial", label: "Press" },
+                        { value: "revised", label: "Priority" }
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setSortBy(opt.value)}
+                          className={`text-[10px] py-1 border rounded cursor-pointer transition font-mono ${
+                            sortBy === opt.value
+                              ? "bg-stone-900 border-stone-900 text-white font-bold"
+                              : "bg-[#FAFAF9] border-[#E7E5E4] text-[#78716C] hover:bg-[#F5F5F4]"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* HOME ARTICLES FEED */}
@@ -1182,7 +1336,7 @@ export default function App() {
                   <p className="text-xs text-[#78716C]">Try lowering the relevance score range or choosing another syllabus category.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-4">
                   {filteredHomeArticles.map((article) => {
                     const isBookmarked = bookmarks.some(b => b.id === article.id);
                     return (
@@ -1190,29 +1344,30 @@ export default function App() {
                         key={article.id}
                         id={`article-card-${article.id}`}
                         onClick={() => handleSelectArticle(article.id)}
-                        className="bg-white rounded-xl border border-[#E6E8EB] hover:border-slate-350 hover:shadow-xs transition-all p-3.5 space-y-2.5 cursor-pointer relative"
+                        className="bg-white rounded-xl border border-stone-200/90 hover:border-stone-400 hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-all p-5 space-y-3.5 cursor-pointer relative"
                       >
-                        {/* Upper indicators */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[9px] font-bold font-mono tracking-wider text-teal-850 uppercase bg-teal-50 border border-teal-100/50 rounded px-1.5 py-0.5 flex items-center gap-1">
-                              <span className="inline-block w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                        {/* Upper Indicators - Ultra Minimalist */}
+                        <div className="flex items-center justify-between gap-2 border-b border-stone-100 pb-2.5">
+                          <div className="flex items-center gap-2 text-[10px] text-stone-500 font-mono">
+                            <span className="font-extrabold text-[#0F766E] uppercase bg-teal-50 px-2 py-0.5 rounded-md">
                               {article.source}
                             </span>
-                            <span className="text-[9px] font-mono font-semibold text-stone-500 bg-stone-100 rounded px-1.5 py-0.5">
+                            <span>•</span>
+                            <span className="font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md">
                               {article.category}
                             </span>
-                            <span className="text-[9px] font-mono text-emerald-800 bg-emerald-50/70 border border-emerald-100 px-1 py-0.2 rounded font-extrabold shadow-3xs" title="Feed Ingestion Reliability Score">
-                              {article.sourcePriority === "VERY HIGH" ? "99% Reliable" : "97% Reliable"}
-                            </span>
+                            <span>•</span>
+                            <span>{article.readingTime}m read</span>
                           </div>
                           
-                          {/* Top right actions */}
                           <div className="flex items-center space-x-1.5">
+                            <span className="text-[10px] font-mono font-bold bg-[#FAF9F5] border border-stone-200 px-2 py-0.5 rounded-md text-stone-700">
+                              Relevance: <span className="text-[#0F766E]">{article.relevanceScore}/10</span>
+                            </span>
                             <button
                               id={`bookmark-toggle-btn-${article.id}`}
                               onClick={(e) => handleToggleBookmark(article.id, e)}
-                              className={`p-1 rounded transition-colors ${isBookmarked ? 'text-[#0F766E] bg-teal-50' : 'text-[#A8A29E] hover:text-[#1C1917]'}`}
+                              className={`p-1.5 rounded-full hover:bg-stone-50 transition-colors ${isBookmarked ? 'text-[#0F766E]' : 'text-stone-400 hover:text-stone-900'}`}
                               title={isBookmarked ? "Bookmarked" : "Save Bookmark"}
                             >
                               <BookmarkIcon className="w-3.5 h-3.5 fill-current" />
@@ -1220,49 +1375,42 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* Middle: Title, Desc, and Relevance Box */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1 my-0.5">
-                            <h3 className="text-[14px] md:text-[15px] font-display font-semibold tracking-tight text-[#0F172A] hover:text-[#0F766E] transition-colors leading-snug">
-                              {article.title}
-                            </h3>
-                            <p className="text-[11.5px] leading-relaxed text-[#57534E] line-clamp-2">
-                              {article.summary?.oneLineRevision || article.content}
-                            </p>
-                          </div>
-                          {/* Premium Relevance Indicator */}
-                          <div className="border border-teal-100 bg-teal-50/40 p-1 rounded flex flex-col items-center justify-center min-w-[38px] h-[38px] shrink-0 mt-0.5">
-                            <span className="text-[11px] font-mono font-extrabold text-teal-850 leading-none">
-                              {article.relevanceScore}
-                            </span>
-                            <span className="text-[6.5px] text-teal-650 font-mono tracking-tighter uppercase mt-0.5 leading-none font-bold">
-                              Focus
-                            </span>
-                          </div>
+                        {/* Title and Exquisite One-line Summary */}
+                        <div className="space-y-1.5">
+                          <h3 className="text-base md:text-lg font-display font-semibold tracking-tight text-stone-900 hover:text-[#0F766E] transition-colors leading-snug">
+                            {article.title}
+                          </h3>
+                          <p className="text-xs md:text-[13px] leading-relaxed text-stone-600 font-sans line-clamp-2">
+                            {article.summary?.oneLineRevision || article.content}
+                          </p>
                         </div>
 
-                        {/* Info tags and stats line */}
-                        <div className="flex items-center justify-between border-t border-[#F5F5F4] pt-2 text-[10px] text-stone-500 font-mono">
-                          <div className="flex items-center space-x-2">
-                            <span className="flex items-center space-x-1">
-                              <Clock className="w-3 h-3 text-stone-400" />
-                              <span>{article.readingTime} min</span>
-                            </span>
-                            <span>•</span>
-                            <span className="text-emerald-800 font-bold bg-emerald-50 px-1 py-0.2 rounded" title="Ingestion timestamp relative evaluation">
-                              {(() => {
-                                const diffMs = Date.now() - new Date(article.ingestionTimestamp).getTime();
-                                const diffMins = Math.round(diffMs / (1000 * 60));
-                                if (diffMins < 5) return "Live Sync • Just now";
-                                if (diffMins < 60) return `Live Sync • ${diffMins}m ago`;
-                                if (diffMins < 1440) return `Live Sync • ${Math.floor(diffMins / 60)}h ago`;
-                                return new Date(article.ingestionTimestamp).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
-                              })()}
+                        {/* Bottom: Date & Original link anchor */}
+                        <div className="flex items-center justify-between pt-1 text-[10px] text-stone-400 font-mono">
+                          <span>
+                            {new Date(article.ingestionTimestamp).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                          
+                          <div className="flex items-center gap-3">
+                            {article.sourceLink && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(article.sourceLink, '_blank');
+                                }}
+                                className="text-[#0F766E] hover:underline font-bold font-sans flex items-center gap-1 cursor-pointer bg-teal-50/50 hover:bg-teal-50 px-2.5 py-1 rounded"
+                              >
+                                Source Publication ↗
+                              </button>
+                            )}
+                            <span className="text-stone-600 font-sans font-semibold hover:text-stone-900 transition-colors flex items-center gap-0.5">
+                              Study Notebook →
                             </span>
                           </div>
-                          <span className="flex items-center text-[#0F766E] gap-0.5 font-sans font-semibold hover:text-teal-900 transition-colors">
-                            View UPSC Breakdown <ChevronRight className="w-3.5 h-3.5" />
-                          </span>
                         </div>
                       </div>
                     );
@@ -2423,8 +2571,6 @@ export default function App() {
           </div>
         )}
 
-      </main>
-
       {/* ==========================================
           ARTICLE BREAKDOWN ANALYSIS DETAIL SHEET (IFRAME CAPABLE INLAY)
          ========================================== */}
@@ -2866,103 +3012,138 @@ export default function App() {
       )}
 
       {/* ==========================================
-          MODAL OVERLAY FOR USER LOGIN / REGISTRATION
+          MODAL OVERLAY FOR USER LOGIN / REGISTRATION (REDESIGNED EXQUISITELY)
          ========================================== */}
-      <div id="auth-overlay-modal" className="hidden fixed inset-0 z-50 bg-[#1C1917]/70 backdrop-blur-xs flex items-center justify-center p-4">
-        <div id="auth-panel-box" className="bg-white border-2 border-[#1C1917] rounded-xl w-full max-w-sm overflow-hidden shadow-2xl relative font-sans text-stone-900">
+      <div id="auth-overlay-modal" className="hidden fixed inset-0 z-50 bg-[#1C1816]/30 backdrop-blur-xs flex items-center justify-center p-4">
+        <div id="auth-panel-box" className="bg-[#FCFAF7] border border-stone-200 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative font-sans text-stone-900">
           
-          <div className="bg-[#1C1917] text-white p-4 flex items-center justify-between">
-            <span className="font-bold text-xs uppercase tracking-wider font-mono">UPSC Identity Vault</span>
+          <div className="border-b border-stone-200/50 p-5 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-mono font-semibold tracking-widest text-[#0F766E] uppercase block">
+                Access Gateway
+              </span>
+              <h4 className="font-display text-lg font-bold text-stone-900">
+                {authMode === 'login' ? 'Sign In to Workspace' : 'Create Trainee Profile'}
+              </h4>
+            </div>
             <button
               onClick={() => {
                 const el = document.getElementById('auth-overlay-modal');
                 if (el) el.classList.add('hidden');
               }}
-              className="text-stone-400 hover:text-white font-black font-mono text-base"
+              className="text-stone-400 hover:text-stone-900 font-bold p-1 rounded-full hover:bg-stone-100 transition cursor-pointer shrink-0 w-7 h-7 flex items-center justify-center"
             >
               ✕
             </button>
           </div>
 
-          <form onSubmit={handleAuth} className="p-4 space-y-4">
-            
-            {/* Login or Register Toggle */}
-            <div className="grid grid-cols-2 bg-[#FAFAF9] border border-[#E7E5E4] p-1 rounded-lg">
+          <div className="p-5 space-y-4">
+            {/* Direct Sandbox Access Button to completely bypass signups */}
+            <div className="bg-teal-50/60 border border-teal-100 p-3 rounded-xl text-center space-y-1.5 flex flex-col items-center">
+              <p className="text-[11px] text-teal-850 font-medium text-center">Bypass registration and check out the feed instantly!</p>
               <button
                 type="button"
-                id="tab-toggle-login"
-                onClick={() => setAuthMode('login')}
-                className={`py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${authMode === 'login' ? 'bg-white shadow-xs text-[#1C1917]' : 'text-stone-500'}`}
+                onClick={handleQuickDemoLogin}
+                disabled={authLoading}
+                className="w-full bg-[#0F766E] hover:bg-teal-800 text-white text-xs font-semibold py-2 px-3 rounded-lg transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
               >
-                Sign In
-              </button>
-              <button
-                type="button"
-                id="tab-toggle-register"
-                onClick={() => setAuthMode('register')}
-                className={`py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${authMode === 'register' ? 'bg-white shadow-xs text-[#1C1917]' : 'text-stone-500'}`}
-              >
-                Register
+                <span>⚡ Instant Candidate Entry</span>
               </button>
             </div>
 
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-stone-200"></div>
+              <span className="flex-shrink mx-3 text-[9px] font-mono text-stone-400 uppercase tracking-widest bg-[#FCFAF7] px-1">Or standard options</span>
+              <div className="flex-grow border-t border-stone-200"></div>
+            </div>
+
             {authError && (
-              <div className="text-xs p-2 bg-red-50 border border-red-200 text-red-900 font-mono rounded">
+              <div className="text-[11px] p-2.5 bg-rose-50 border border-rose-200 text-rose-900 font-mono rounded-lg">
                 ⚠️ {authError}
               </div>
             )}
 
-            {authMode === 'register' && (
+            {/* FORM CONTAINER */}
+            <form onSubmit={(e) => {
+              setAuthMethod('credentials');
+              handleAuth(e);
+            }} className="space-y-3.5">
+              
+              {/* Onboard Details when Registering */}
+              {authMode === 'register' && (
+                <div className="space-y-1">
+                  <label className="text-[9.5px] font-mono font-semibold text-stone-500 uppercase tracking-wider block">Candidate Full Name</label>
+                  <input
+                    id="auth-name-input"
+                    type="text"
+                    required
+                    placeholder="Abhishek Sen, IAS"
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                    className="w-full text-xs p-2.5 border border-stone-200 rounded-lg focus:outline-none focus:border-[#0F766E] bg-white font-medium"
+                  />
+                </div>
+              )}
+
+              {/* standard credentials email */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-stone-600 block uppercase font-mono">Full Name</label>
+                <label className="text-[9.5px] font-mono font-semibold text-stone-500 uppercase tracking-wider block">
+                  Cabinet Email ID
+                </label>
                 <input
-                  id="auth-name-input"
-                  type="text"
+                  id="auth-email-input"
+                  type="email"
                   required
-                  placeholder="Abhishek Rai"
-                  value={authName}
-                  onChange={(e) => setAuthName(e.target.value)}
-                  className="w-full text-xs p-2 border border-stone-200 rounded focus:outline-none focus:border-[#1C1917] bg-[#FAFAF9]"
+                  placeholder="trainee@nic.in"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-stone-200 rounded-lg focus:outline-none focus:border-[#0F766E] bg-white font-medium"
                 />
               </div>
-            )}
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-stone-600 block uppercase font-mono">Email Address</label>
-              <input
-                id="auth-email-input"
-                type="email"
-                required
-                placeholder="aspirant@lbsnaa.gov.in"
-                value={authEmail}
-                onChange={(e) => setAuthEmail(e.target.value)}
-                className="w-full text-xs p-2 border border-stone-200 rounded focus:outline-none focus:border-[#1C1917] bg-[#FAFAF9]"
-              />
+              {/* Standard Password input section */}
+              <div className="space-y-1">
+                <label className="text-[9.5px] font-mono font-semibold text-stone-500 uppercase tracking-wider block">Access Key Code</label>
+                <input
+                  id="auth-password-input"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-stone-200 rounded-lg focus:outline-none focus:border-[#0F766E] bg-white font-medium"
+                />
+              </div>
+
+              <button
+                id="auth-submit-action-btn"
+                type="submit"
+                disabled={authLoading}
+                className="w-full bg-stone-900 hover:bg-stone-850 text-white text-xs font-semibold py-2.5 px-3 rounded-lg transition shadow-xs cursor-pointer disabled:opacity-50 mt-1"
+              >
+                {authLoading 
+                  ? 'Verifying Credentials...' 
+                  : authMode === 'login' ? 'Access Candidate Account' : 'Initialize Trainee Profile'
+                }
+              </button>
+            </form>
+
+            <div className="text-center pt-2 border-t border-stone-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode(authMode === 'login' ? 'register' : 'login');
+                  setAuthError('');
+                }}
+                className="text-xs text-[#0F766E] hover:underline font-semibold"
+              >
+                {authMode === 'login' 
+                  ? "Don't have an account? Sign Up" 
+                  : "Already registered? Sign In"
+                }
+              </button>
             </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-stone-600 block uppercase font-mono">Password Secured</label>
-              <input
-                id="auth-password-input"
-                type="password"
-                required
-                placeholder="••••••••"
-                value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
-                className="w-full text-xs p-2 border border-stone-200 rounded focus:outline-none focus:border-[#1C1917] bg-[#FAFAF9]"
-              />
-            </div>
-
-            <button
-              id="auth-submit-action-btn"
-              type="submit"
-              disabled={authLoading}
-              className="w-full bg-[#1C1917] hover:bg-[#2E2A27] text-white text-xs font-bold py-2 px-3 rounded-md transition shadow-md cursor-pointer disabled:opacity-50"
-            >
-              {authLoading ? 'Authorizing secure token...' : authMode === 'login' ? 'Access Account' : 'Create IAS Account'}
-            </button>
-
-          </form>
+          </div>
         </div>
       </div>
 
@@ -2986,10 +3167,14 @@ export default function App() {
         </div>
       )}
 
+          </div>
+        </div>
+      </div>
+
       {/* ==========================================
           STICKY COHESIVE BOTTOM NAV BAR (FOR MOBILE SCREEN DESIGN)
          ========================================== */}
-      <nav id="persistent-bottom-nav" className="fixed bottom-0 left-0 right-0 max-w-lg md:max-w-4xl mx-auto bg-white/95 backdrop-blur-md border-t border-[#E7E5E4] grid grid-cols-5 py-2.5 z-45">
+      <nav id="persistent-bottom-nav" className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#E7E5E4] grid grid-cols-5 py-2.5 z-45 select-none">
         <button
           id="nav-btn-home"
           onClick={() => setCurrentTab('home')}
@@ -3039,7 +3224,7 @@ export default function App() {
           className={`flex flex-col items-center justify-center space-y-1 cursor-pointer transition-colors ${currentTab === 'bookmarks' ? 'text-[#0F766E]' : 'text-stone-500 hover:text-stone-900'}`}
         >
           <BookmarkIcon className="w-5 h-5" />
-          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold">Pined</span>
+          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold">Pinned</span>
         </button>
       </nav>
 

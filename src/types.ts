@@ -47,6 +47,7 @@ export interface Article {
   tags: string[];
   content: string; // Cleaned article text
   readingTime: number; // in minutes
+  sourceLink?: string; // Original URL link
   summary?: AISummary;
   mcq?: MCQ;
 }
