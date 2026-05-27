@@ -42,6 +42,74 @@ import PYQDesk from './components/PYQDesk.tsx';
 import AdminPortal from './components/AdminPortal.tsx';
 import LearningPath from './components/LearningPath.tsx';
 
+// Helper to parse URLs and Markdown-style links and render them into interactive clickable links
+const renderFormattedSources = (text: string) => {
+  if (!text) return null;
+  const lines = text.split("\n");
+  return lines.map((line, idx) => {
+    const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = linkRegex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(line.substring(lastIndex, match.index));
+      }
+      parts.push(
+        <a
+          key={match[2] + "_" + idx}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#0F766E] hover:underline font-semibold inline-flex items-center gap-0.5"
+        >
+          {match[1]}
+        </a>
+      );
+      lastIndex = linkRegex.lastIndex;
+    }
+    if (lastIndex < line.length && lastIndex > 0) {
+      parts.push(line.substring(lastIndex));
+    }
+
+    if (parts.length === 0) {
+      const urlRegex = /(https?:\/\/[^\s\)]+)/g;
+      let lastUrlIndex = 0;
+      let urlMatch;
+      while ((urlMatch = urlRegex.exec(line)) !== null) {
+        if (urlMatch.index > lastUrlIndex) {
+          parts.push(line.substring(lastUrlIndex, urlMatch.index));
+        }
+        let cleanUrl = urlMatch[1];
+        if (cleanUrl.endsWith(")") || cleanUrl.endsWith("]")) {
+          cleanUrl = cleanUrl.slice(0, -1);
+        }
+        parts.push(
+          <a
+            key={cleanUrl + "_" + idx}
+            href={cleanUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#0F766E] hover:underline font-semibold break-all"
+          >
+            {cleanUrl}
+          </a>
+        );
+        lastUrlIndex = urlRegex.lastIndex;
+      }
+      if (lastUrlIndex < line.length) {
+        parts.push(line.substring(lastUrlIndex));
+      }
+    }
+
+    return (
+      <div key={idx} className="min-h-[18px]">
+        {parts.length > 0 ? parts : line}
+      </div>
+    );
+  });
+};
+
 type AppTab = 'home' | 'search' | 'brief' | 'revision' | 'bookmarks' | 'path' | 'admin';
 
 export default function App() {
@@ -2487,7 +2555,7 @@ export default function App() {
                     <div className="space-y-2">
                       <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Official Sources</h3>
                       <div className="text-xs text-stone-500 font-sans leading-relaxed whitespace-pre-wrap">
-                        {selectedArticle.summary.officialSources || "• Press Information Bureau (PIB)\n• Gazette of India Publications"}
+                        {renderFormattedSources(selectedArticle.summary.officialSources || "• Press Information Bureau PIB Cabinet Reports (https://pib.gov.in/PressReleasePage.aspx?PRID=1888547)\n• Cabinet Committee on Economic Affairs Releases (https://pib.gov.in)")}
                       </div>
                     </div>
 

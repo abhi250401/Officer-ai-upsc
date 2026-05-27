@@ -382,7 +382,7 @@ export default function AdminPortal({
                     ) : (
                       <tr>
                         <td colSpan={4} className="p-4 text-center text-stone-400 font-mono italic">
-                          No active candidates found in primary collections. Try creating a student profile.
+                          No registered users found in primary collections. Try creating a student profile.
                         </td>
                       </tr>
                     )}

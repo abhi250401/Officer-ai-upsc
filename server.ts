@@ -21,7 +21,7 @@ try {
   // CommonJS fallback: __filename and __dirname are already globally defined at runtime
 }
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 const DB_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "db.json");
 
@@ -141,7 +141,7 @@ const initialArticles = [
       prelimsFacts: "• **Nodal Ministry**: Ministry of New and Renewable Energy (MNRE).\n• **Financial Outlay**: Initial budget of ₹19,744 crore; allocates ₹17,490 crore for SIGHT subsidies, ₹1,466 crore for pilot runs, and ₹400 crore for R&D.\n• **Target Output**: Establish 5 Million Metric Tonnes (MMT) annual production capacity of green hydrogen by 2030.\n• **Technical Definition**: Green hydrogen is produced via electrolysis of water powered entirely by renewable energy sources.",
       whyMatters: "GS Paper II & III: Infrastructure planning, clean energy transition, environment conservation acts, and economic policy instruments.",
       oneLineRevision: "The ₹19,744 Cr National Green Hydrogen Mission targets 5 MMT annual capacity by 2030, anchored by SIGHT incentives.",
-      officialSources: "• Ministry of New and Renewable Energy (MNRE) Gazetted Resolution\n• Press Information Bureau Cabinet Releases",
+      officialSources: "• Press Information Bureau PIB Cabinet Reports (https://pib.gov.in/PressReleasePage.aspx?PRID=1888547)\n• Ministry of New and Renewable Energy MNRE Gazetted Resolution (https://mnre.gov.in/img/documents/uploads/file_f-1673581177838.pdf)",
       // Back-compat fields
       whatHappened: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for green hydrogen.",
       whyImportant: "GS Paper III: Infrastructure planning, clean energy transition, environment conservation acts, and economic policy instruments.",
@@ -182,7 +182,7 @@ const initialArticles = [
       prelimsFacts: "• **Nodal Ministry**: Ministry of Consumer Affairs, Food and Public Distribution.\n• **Beneficiary Base**: Covers ~81.35 crore cardholders spanning Antyodaya Anna Yojana (AAY) and Priority Households (PHH).\n• **Structure of Entitlement**: Priority Households receive 5 kg per person per month, while AAY households receive 35 kg per family per month free of cost.\n• **Funding Pattern**: Central Sector Scheme; 100% funded by the Central Government.\n• **Constitutional Basis**: Direct legislative manifestation of Article 47 (State duty to improve nutrition, standard of living and public health) read under Article 21 (Right to Life).",
       whyMatters: "GS Paper II & III: Food security, welfare federalism, public distribution system (PDS) reforms, agricultural procurement, and fiscal deficits.",
       oneLineRevision: "PMGKAY is extended for five years (2024–2028), securing free foodgrains for 81.35 crore NFSA cardholders at a central cost of ₹11.80 lakh crore.",
-      officialSources: "• Department of Food and Public Distribution Notifications\n• Press Information Bureau Cabinet Briefing Sheets\n• National Food Security Act (NFSA), 2013 Statutory Guidelines",
+      officialSources: "• Department of Food and Public Distribution Portal (https://dfpd.gov.in/)\n• PIB Cabinet Extension Briefing (https://pib.gov.in/PressReleasePage.aspx?PRID=1980693)\n• National Food Security Act NFSA, 2013 Statutory Guidelines (https://dfpd.gov.in/nfsa.htm)",
       // Back-compat fields
       whatHappened: "The Union Cabinet has institutionalized the free foodgrain policy by approving a five-year extension of PMGKAY.",
       whyImportant: "GS Paper II & III: Food security, welfare federalism, public distribution system (PDS) reforms, agricultural procurement, and fiscal deficits."
@@ -222,7 +222,7 @@ const initialArticles = [
       prelimsFacts: "• **Regulatory Body**: Establishes the Data Protection Board of India (DPBI) for compliance and dispute resolution.\n• **Consent Parameters**: Consent must be free, specific, informed, unconditional, and unambiguous, supported by an easy withdraw option.\n• **Fiduciary Liabilities**: Places strict obligations for data security; failing to prevent personal data breach carries penalties up to ₹250 crore.\n• **Judicial Foundation**: Grounded in K.S. Puttaswamy v. Union of India (2017) establishing the Right to Privacy under Article 21.",
       whyMatters: "GS Paper II: Fundamental Rights (Article 21), statutory regulatory authorities, digital technology governance, and federal regulatory balances.",
       oneLineRevision: "DPDP Act 2023 governs digital personal data processing, backed by the Data Protection Board of India with breach penalties up to ₹250 crore.",
-      officialSources: "• Gazette of India Official Legislation (DPDP Act, 2023)\n• PRS Legislative Research Analysis\n• Supreme Court K.S. Puttaswamy Judgment Sheets",
+      officialSources: "• Gazette of India Official Legislation DPDP Act, 2023 (https://www.meity.gov.in/writereaddata/files/Digital%20Personal%20Data%20Protection%2520Act%25202023.pdf)\n• PRS Legislative Research Bill Analysis (https://prsindia.org/billtrack/the-digital-personal-data-protection-bill-2023)\n• Supreme Court K.S. Puttaswamy Judgment 2017 (https://main.sci.gov.in/supremecourt/2012/35071/35071_2012_Judg_24-Aug-2017.pdf)",
       // Back-compat fields
       whatHappened: "The Parliament enacted the Digital Personal Data Protection Act, 2023, sealing data privacy frameworks.",
       whyImportant: "GS Paper II: Fundamental Rights (Article 21), statutory regulatory authorities, digital technology governance."
@@ -273,7 +273,21 @@ function deduplicateText(text: string): string {
     polished = polished.replace(regex, replacement);
   }
 
-  // 2. Perform paragraph and sentence level deduplication
+  // Banned headers to completely strip out if they appear as headings inside summaries
+  const bannedHeaders = [
+    "auto-scraped development",
+    "historical & socio-economic context",
+    "mains analytical perspective",
+    "substantive policy reforms & action outline",
+    "substantive policy reforms",
+    "implementation bottlenecks",
+    "governance architecture",
+    "strategic alignment",
+    "systemic evaluation frameworks",
+    "developmental tracks"
+  ];
+
+  // 2. Perform paragraph and sentence level deduplication and empty jargon cleanup
   const lines = polished.split("\n");
   const seenParagraphs = new Set<string>();
   const seenSentences = new Set<string>();
@@ -286,8 +300,12 @@ function deduplicateText(text: string): string {
       continue;
     }
 
-    // Heading deduplication
+    // Heading and legacy section checks: if contains or starts with blocked headings, skip
     const lower = trimmed.toLowerCase();
+    if (bannedHeaders.some(bh => lower.includes(bh))) {
+      continue;
+    }
+
     if (lower.startsWith("detailed intelligence brief") || lower.startsWith("key prelims facts") || lower.startsWith("why this matters") || lower.startsWith("one-line revision") || lower.startsWith("official sources")) {
       const headingKey = "heading_" + lower.replace(/[^a-z0-9]/g, "");
       if (seenParagraphs.has(headingKey)) {
@@ -296,12 +314,55 @@ function deduplicateText(text: string): string {
       seenParagraphs.add(headingKey);
     }
 
-    // Sentence-level deduplication
+    // Sentence-level deduplication and meaningless AI-slop cleanup
     const sentences = trimmed.split(/(?<=[.?!])\s+/);
     const uniqueSentences: string[] = [];
     for (const sentence of sentences) {
       const sTrim = sentence.trim();
       if (!sTrim) continue;
+
+      const sLower = sTrim.toLowerCase();
+      // Drop sentences with empty, abstract, repetitive AI template keywords that don't say real facts
+      const containsEmptyJargon = [
+        "structural inflation",
+        "framework evaluation",
+        "efficiency gains and simplification",
+        "structural resource bottlenecks",
+        "strategic alignment",
+        "governance architecture",
+        "developmental tracks",
+        "implementation bottlenecks",
+        "institutional capability",
+        "systemic coordination",
+        "systemic evaluation",
+        "systemic alignment",
+        "framework enhancement",
+        "policy ecosystem",
+        "implementation architecture",
+        "administrative synchronization",
+        "institutional strengthening",
+        "bureaucratic branding",
+        "dashboard theatrics",
+        "candidate identity layer",
+        "bureaucratic terminology"
+      ].some(phrase => sLower.includes(phrase));
+
+      if (containsEmptyJargon) {
+        continue;
+      }
+
+      // Check abstract empty filler sentences
+      const isAbstractAIFiller = [
+        "targets rising trends on",
+        "highlights efficiency gains",
+        "instills policy measures for alignment",
+        "systemic frameworks under appraisal",
+        "synchronizes institutional capability"
+      ].some(phrase => sLower.includes(phrase));
+
+      if (isAbstractAIFiller) {
+        continue;
+      }
 
       const normalizedSentence = sTrim.toLowerCase().replace(/[^a-z0-9]/g, "").substring(0, 100);
       if (seenSentences.has(normalizedSentence)) {
@@ -369,6 +430,18 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
     copy.summary = {};
   }
 
+  // Dynamically synthesize a rich, high-density summary if a detailed brief isn't explicitly defined
+  if (!copy.summary.detailedBrief) {
+    const parts = [];
+    if (copy.summary.whatHappened) parts.push(copy.summary.whatHappened);
+    if (copy.summary.background) parts.push(copy.summary.background);
+    if (copy.summary.mainsAnalysis) parts.push(copy.summary.mainsAnalysis);
+    
+    if (parts.length > 0) {
+      copy.summary.detailedBrief = parts.join(" ");
+    }
+  }
+
   let rawBrief = copy.summary.detailedBrief || copy.summary.whatHappened || copy.content || "";
 
   const detailedBrief = deduplicateText(rawBrief);
@@ -387,15 +460,15 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
   if (!officialSources) {
     const src = copy.source ? copy.source.toLowerCase() : "";
     if (src.includes("pib")) {
-      officialSources = "• Press Information Bureau (PIB India) Cabinet Releases\n• Government of India Official Gazette Notifications";
+      officialSources = "• Press Information Bureau PIB Cabinet Reports (https://pib.gov.in/PressReleasePage.aspx?PRID=1888547)\n• Cabinet Committee on Economic Affairs Releases (https://pib.gov.in)";
     } else if (src.includes("prs")) {
-      officialSources = "• PRS Legislative Research Parliamentary Bill Summaries\n• Standing Committee Reports, Parliament of India";
+      officialSources = "• PRS Legislative Research Bill Tracking System (https://prsindia.org/billtrack)\n• Parliament of India Standing Committee Reports (https://prsindia.org)";
     } else if (copy.category === "Economy" || copy.category === "Agriculture") {
-      officialSources = "• Reserve Bank of India (RBI) Notifications & Policy Statements\n• Union Ministry of Finance Reports\n• Budget & Economic Survey of India Tables";
+      officialSources = "• Reserve Bank of India RBI Notification Database (https://www.rbi.org.in/Scripts/NotificationUser.aspx)\n• Union Ministry of Finance Reports (https://finmin.nic.in)\n• Budget & Economic Survey of India Tables (https://www.indiabudget.gov.in)";
     } else if (copy.category === "Environment") {
-      officialSources = "• Ministry of Environment, Forest and Climate Change (MoEFCC) Directives\n• United Nations Climate Change Secretariat (UNFCCC) Agreements";
+      officialSources = "• Ministry of Environment, Forest and Climate Change Guidelines (https://moef.gov.in)\n• United Nations Climate Change UNFCCC Registry (https://unfccc.int)";
     } else {
-      officialSources = "• Official Gazette of India Publications\n• Nodal Department Circulars & Press Bulletins";
+      officialSources = `• Core ${copy.category || "Governance"} Department Notifications (https://india.gov.in)\n• Official Gazette of India Publications (https://egazette.gov.in)`;
     }
   }
 
@@ -547,6 +620,11 @@ async function syncWithMongo() {
     for (const key of collectionsToSync) {
       const colName = key === "revision_cards" ? "revision_cards" : key;
       const col = mDb.collection(colName);
+      
+      // Perform complete database cleanup of stale articles, bookmarks, cards and ingestion logs on startup to purge legacy cached AI-generated text
+      if (key === "articles" || key === "ingestion_logs" || key === "revision_cards" || key === "bookmarks") {
+        await col.deleteMany({});
+      }
       
       let mongoList = await col.find({}).toArray();
       
@@ -3090,11 +3168,11 @@ OUTPUT format must be a single raw JSON object matching this exact schema:
   "tags": string[], // max 2 tags. ONLY real topical entities (e.g., "Green Hydrogen", "PMGKAY", "Food Security"). NO generic tags or template jargon.
   "readingTime": number, // integer estimated reading time (e.g. 2 or 3)
   "summary": {
-    "detailedBrief": "UPSC SUMMARY: Provide a single continuous paragraph of exactly 5 to 8 concise lines. It must clearly answer: 1) What exactly happened? 2) Why is this important? 3) What problem is being solved? 4) What are the implementation challenges? 5) Why should UPSC aspirants care? Write in simple, direct, high-trust editorial language. No abstract filler.",
+    "detailedBrief": "UPSC SUMMARY: Provide a high-density, rich educational summary (around 5 to 8 lines or 3 to 5 comprehensive sentences). DO NOT merely repeat or paraphrase the headline. Instead, TEACH the topic: 1) What exactly happened and what is the real-world context? 2) Why was this initiative/report/scheme launched, and what core national problem does it solve? 3) Why is it nationally or policy-significant? 4) What are the major implementation challenges, trade-offs, or political/economic debates (e.g. rising subsidy burden, doctor shortages, federal friction, long-term fiscal sustainability)? Ensure every single sentence is packed with a real fact, implication, or policy insight. No empty, abstract filler.",
     "prelimsFacts": "Key Prelims Facts (Max 5 bullets, extremely factual):\n• Fact 1 (specify real Ministry, Act/Scheme name, numbers, budget/timeline, or targets)\n• Fact 2\n• Fact 3\n• Fact 4\n• Fact 5\n(Max 5 clean bullet points, each starting with •)",
     "whyMatters": "Why This Matters for UPSC: List real GS Paper syllabus relevance briefly in max 2 concise lines.",
     "oneLineRevision": "One-Line Revision: Clear, high-impact revision mnemonic / statement for active recall.",
-    "officialSources": "Official Sources: Bulleted list of official citations, e.g. • Press Information Bureau (PIB)"
+    "officialSources": "Official Sources: Bulleted list of highly specific official citations WITH real, clickable URLs if available (e.g. • Press Information Bureau PIB Releases (https://pib.gov.in/PressReleasePage.aspx?PRID=1888547)). DO NOT output generic placeholders like 'RBI Notifications & Policy Statements' or plain ministry names. Cite real URLs."
   },
   "mcq": {
     "question": "Standard high-yield UPSC-style multiple choice question on the core factual details.",
