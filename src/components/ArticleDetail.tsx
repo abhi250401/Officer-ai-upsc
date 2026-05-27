@@ -207,11 +207,6 @@ export default function ArticleDetail({
                   </h3>
                   <div className="text-stone-800 leading-relaxed font-sans text-sm p-4 bg-white border border-stone-200/50 rounded-xl shadow-3xs text-[13.5px] space-y-3">
                     <p className="whitespace-pre-wrap">{detailedBrief}</p>
-                    {article.summary?.background && (
-                      <div className="border-t border-dashed border-stone-200 pt-2.5 mt-2.5 italic text-stone-550 text-xs">
-                        <strong>Historical/Socio-Economic Backdrop:</strong> {article.summary.background}
-                      </div>
-                    )}
                   </div>
                 </div>
 

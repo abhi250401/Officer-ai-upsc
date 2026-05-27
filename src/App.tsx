@@ -2828,7 +2828,7 @@ export default function App() {
                 {selectedArticle.summary ? (
                   <div className="space-y-4 pt-1 font-sans">
                     
-                    {/* Section 1: What Happened */}
+                    {/* Section 1: Detailed Intelligence Brief */}
                     <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
                       <button
                         onClick={() => toggleSection('whatHappened')}
@@ -2836,153 +2836,75 @@ export default function App() {
                       >
                         <span className="flex items-center gap-2">
                           <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">01</span>
-                          <span>What Happened & Background</span>
+                          <span>Detailed Intelligence Brief</span>
                         </span>
                         <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
                           {openSections['whatHappened'] ? 'Collapse ▴' : 'Expand ▾'}
                         </span>
                       </button>
                       {openSections['whatHappened'] && (
-                        <div className="mt-2 pl-7 space-y-2 text-[11.5px] text-[#44403C] leading-relaxed">
-                          <p className="whitespace-pre-wrap text-[#1C1917]">{selectedArticle.summary.whatHappened}</p>
-                          {selectedArticle.summary.background && (
-                            <p className="whitespace-pre-wrap text-stone-500 italic mt-1.5">
-                              <strong>Context:</strong> {selectedArticle.summary.background}
-                            </p>
-                          )}
+                        <div className="mt-2 pl-7 text-[11.5px] text-[#44403C] leading-relaxed">
+                          <p className="whitespace-pre-wrap text-[#1C1917]">
+                            {selectedArticle.summary.detailedBrief || selectedArticle.summary.whatHappened}
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    {/* Section 2: Why Important */}
-                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
-                      <button
-                        onClick={() => toggleSection('whyImportant')}
-                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-stone-900 group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">02</span>
-                          <span>Why Important & Strategic Relevance</span>
-                        </span>
-                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['whyImportant'] ? 'Collapse ▴' : 'Expand ▾'}
-                        </span>
-                      </button>
-                      {openSections['whyImportant'] && (
-                        <div className="mt-2 pl-7 space-y-2 text-[11.5px] text-[#44403C] leading-relaxed">
-                          <p className="font-medium text-[#1C1917]">{selectedArticle.summary.whyImportant}</p>
-                          {selectedArticle.summary.internationalRelevance && (
-                            <p className="text-stone-500 mt-1">
-                              <strong>Global Outlook:</strong> {selectedArticle.summary.internationalRelevance}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Section 3: Prelims Snapshot */}
+                    {/* Section 2: Key Prelims Facts */}
                     <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
                       <button
                         onClick={() => toggleSection('prelimsSnapshot')}
                         className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-[#1C1917] group cursor-pointer"
                       >
                         <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">03</span>
-                          <span>Prelims Snapshot (Legal & Key Indicators)</span>
+                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">02</span>
+                          <span>Key Prelims Facts</span>
                         </span>
                         <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
                           {openSections['prelimsSnapshot'] ? 'Collapse ▴' : 'Expand ▾'}
                         </span>
                       </button>
                       {openSections['prelimsSnapshot'] && (
-                        <div className="mt-2 pl-7 space-y-2.5 text-[11.5px] text-[#44403C] leading-relaxed">
-                          {selectedArticle.summary.constitutionalLinks && (
-                            <div className="bg-[#FAFAF9] border border-[#E7E5E4] p-2.5 rounded-lg">
-                              <span className="text-[8.5px] font-bold uppercase text-stone-500 block mb-0.5 font-mono">Constitutional Linkages</span>
-                              <p className="text-stone-850 font-sans font-medium whitespace-pre-wrap">{selectedArticle.summary.constitutionalLinks}</p>
-                            </div>
-                          )}
-                          {selectedArticle.summary.prelimsFacts && (
-                            <div className="bg-[#FAFAF9] border border-[#E7E5E4] p-2.5 rounded-lg text-stone-800">
-                              <span className="text-[8.5px] font-bold uppercase text-stone-500 block mb-0.5 font-mono">High-Yield Indicators</span>
-                              <p className="whitespace-pre-wrap font-mono font-medium text-stone-900">{selectedArticle.summary.prelimsFacts}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Section 4: Mains Analysis */}
-                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
-                      <button
-                        onClick={() => toggleSection('mainsAnalysis')}
-                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-stone-900 group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">04</span>
-                          <span>Mains Analysis & Policy Dimensions</span>
-                        </span>
-                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['mainsAnalysis'] ? 'Collapse ▴' : 'Expand ▾'}
-                        </span>
-                      </button>
-                      {openSections['mainsAnalysis'] && (
-                        <div className="mt-2 pl-7 text-[11.5px] text-[#44403C] leading-relaxed pr-1 font-serif italic whitespace-pre-wrap">
-                          {selectedArticle.summary.mainsAnalysis}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Section 5: Way Forward */}
-                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
-                      <button
-                        onClick={() => toggleSection('wayForward')}
-                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-stone-900 group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">05</span>
-                          <span>Way Forward & Prescriptions</span>
-                        </span>
-                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['wayForward'] ? 'Collapse ▴' : 'Expand ▾'}
-                        </span>
-                      </button>
-                      {openSections['wayForward'] && (
                         <div className="mt-2 pl-7 text-[11.5px] text-[#44403C] leading-relaxed">
-                          {selectedArticle.summary.wayForward}
+                          <p className="whitespace-pre-wrap font-serif text-[#1C1917] bg-[#FAFAF9] border border-[#E7E5E4] p-3 rounded-lg leading-loose">
+                            {selectedArticle.summary.prelimsFacts}
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    {/* Section 6: PYQ Linkage */}
+                    {/* Section 3: Why This Matters for UPSC */}
                     <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
                       <button
-                        onClick={() => toggleSection('pyqLinkage')}
+                        onClick={() => toggleSection('whyImportant')}
                         className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-stone-900 group cursor-pointer"
                       >
                         <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">06</span>
-                          <span>PYQ Linkage & CSE Blueprint</span>
+                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">03</span>
+                          <span>Why This Matters for UPSC</span>
                         </span>
                         <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['pyqLinkage'] ? 'Collapse ▴' : 'Expand ▾'}
+                          {openSections['whyImportant'] ? 'Collapse ▴' : 'Expand ▾'}
                         </span>
                       </button>
-                      {openSections['pyqLinkage'] && (
-                        <div className="mt-2 pl-7 text-[11.5px] text-stone-800 font-mono">
-                          {selectedArticle.summary.pyqLinkage}
+                      {openSections['whyImportant'] && (
+                        <div className="mt-2 pl-7 text-[11.5px] text-[#44403C] leading-relaxed">
+                          <p className="font-medium text-[#1C1917] bg-stone-900 text-stone-100 p-3 rounded-lg">
+                            {selectedArticle.summary.whyMatters || selectedArticle.summary.whyImportant}
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    {/* Section 7: One-Line Revision */}
+                    {/* Section 4: One-Line Revision Core */}
                     <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
                       <button
                         onClick={() => toggleSection('oneLineRevision')}
                         className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-[#1C1917] group cursor-pointer"
                       >
                         <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">07</span>
+                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">04</span>
                           <span>One-Line Revision Core</span>
                         </span>
                         <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
@@ -2990,10 +2912,31 @@ export default function App() {
                         </span>
                       </button>
                       {openSections['oneLineRevision'] && (
-                        <div className="mt-2 pl-7 border-l-2 border-[#0F766E] py-1">
-                          <p className="font-display italic text-sm text-[#0F172A] leading-relaxed">
+                        <div className="mt-2 pl-7 border-l-2 border-[#0F766E] py-1 bg-teal-50/20 p-2.5 rounded-r-lg">
+                          <p className="font-display italic text-xs text-[#0F172A] leading-relaxed">
                             &ldquo;{selectedArticle.summary.oneLineRevision}&rdquo;
                           </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section 5: Official Sources */}
+                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
+                      <button
+                        onClick={() => toggleSection('pyqLinkage')}
+                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-stone-900 group cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">05</span>
+                          <span>Official Sources</span>
+                        </span>
+                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
+                          {openSections['pyqLinkage'] ? 'Collapse ▴' : 'Expand ▾'}
+                        </span>
+                      </button>
+                      {openSections['pyqLinkage'] && (
+                        <div className="mt-2 pl-7 text-[11px] text-stone-700 font-mono bg-stone-50 p-2.5 rounded-lg whitespace-pre-wrap">
+                          {selectedArticle.summary.officialSources || "• Press Information Bureau (PIB)\n• Nodal Ministry Gazetted circulars"}
                         </div>
                       )}
                     </div>

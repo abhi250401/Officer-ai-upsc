@@ -249,27 +249,28 @@ function cleanRoboticJargon(text: string): string {
   if (!text) return "";
   let polished = text;
   
-  // Clean up typical generic AI boilerplate and forced governance wording
+  // Clean up and discard typical generic AI boilerplate and forced governance/MBA jargon
   const replacements: Record<string, string> = {
-    "institutional capability enhancement": "agency capacity planning",
-    "procedural streamlining": "administrative simplification",
+    "institutional capability enhancement": "agency planning",
+    "procedural streamlining": "process simplification",
     "framework alignment": "policy integration",
     "developmental coordination": "strategic coordination",
-    "implementation bottlenecks": "operational constraints",
-    "administrative synchronization": "regulatory harmonization",
+    "implementation bottlenecks": "delays",
+    "administrative synchronization": "regulatory harmony",
     "state planning indicators": "developmental indices",
     "capability assessment frameworks": "performance benchmarks",
-    "institutional strengthening": "administrative capacity building",
-    "procedural reforms": "operational improvements",
+    "institutional strengthening": "capacity building",
+    "procedural reforms": "improvements",
     "technology-first implementation": "digital service delivery",
     "administrative streamlining": "process simplification",
-    "governance transparency": "fiduciary accountability",
-    "structural review": "sectoral assessment",
-    "inclusive development": "equitable outreach",
-    "capacity building initiatives": "skills empowerment programs",
-    "policy interventions": "strategic measures",
+    "governance transparency": "accountability",
+    "structural review": "assessment",
     "vibrant ecosystem": "productive environment",
-    "holistic approach": "comprehensive strategy"
+    "holistic approach": "strategy",
+    "structural capability": "capacity",
+    "administrative simplification": "simplification",
+    "synergistic frameworks": "cooperative systems",
+    "resource optimization": "budget planning"
   };
 
   for (const [key, val] of Object.entries(replacements)) {
@@ -277,6 +278,69 @@ function cleanRoboticJargon(text: string): string {
     polished = polished.replace(rx, val);
   }
   return polished;
+}
+
+function deduplicateText(text: string): string {
+  if (!text) return "";
+  
+  const lines = text.split("\n");
+  const seenParagraphs = new Set<string>();
+  const seenSentences = new Set<string>();
+  const resultLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      resultLines.push("");
+      continue;
+    }
+
+    // Header deduplication
+    const lower = trimmed.toLowerCase();
+    if (lower.includes("mains analytical") || lower.includes("background:") || lower.includes("context:") || lower.includes("way forward:") || lower.includes("detailed intelligence brief:")) {
+      const headingKey = "heading_" + lower.replace(/[^a-z0-9]/g, "");
+      if (seenParagraphs.has(headingKey)) {
+        continue;
+      }
+      seenParagraphs.add(headingKey);
+    }
+
+    // Sentence-level deduplication inside paragraphs to check for runaway generator repeats
+    const sentences = trimmed.split(/(?<=[.?!])\s+/);
+    const uniqueSentences: string[] = [];
+    for (const sentence of sentences) {
+      const sTrim = sentence.trim();
+      if (!sTrim) continue;
+      
+      const normalizedSentence = sTrim.toLowerCase().replace(/[^a-z0-9]/g, "").substring(0, 100);
+      if (seenSentences.has(normalizedSentence)) {
+        continue;
+      }
+      seenSentences.add(normalizedSentence);
+      uniqueSentences.push(sTrim);
+    }
+
+    if (uniqueSentences.length > 0) {
+      const assembledLine = uniqueSentences.join(" ");
+      const normalizedLine = assembledLine.toLowerCase().replace(/[^a-z0-9]/g, "").substring(0, 150);
+      if (seenParagraphs.has(normalizedLine)) {
+        continue;
+      }
+      seenParagraphs.add(normalizedLine);
+      resultLines.push(assembledLine);
+    }
+  }
+
+  // Joint text, clean multiple empty lines
+  let cleanedText = resultLines.filter((l, i, arr) => l !== "" || (i > 0 && arr[i-1] !== "")).join("\n").trim();
+
+  // Strict word count threshold: truncate to prevent runway AI filler
+  const words = cleanedText.split(/\s+/);
+  if (words.length > 600) {
+    cleanedText = words.slice(0, 500).join(" ") + "... [Abridged for High-Density Strategic Briefing]";
+  }
+
+  return cleanedText;
 }
 
 function sanitizeAndPolishUPSCArticle(article: any): any {
@@ -290,36 +354,40 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
   
   // Extract or build a beautiful detailed intelligence brief with zero filler text
   let rawBrief = copy.summary.detailedBrief || copy.summary.whatHappened || copy.content || "";
-  if (copy.summary.background && !rawBrief.includes(copy.summary.background)) {
-    rawBrief = rawBrief + "\n\n**Historical & Socio-Economic Context:**\n" + copy.summary.background;
-  }
-  if (copy.summary.mainsAnalysis && !rawBrief.includes(copy.summary.mainsAnalysis)) {
-    rawBrief = rawBrief + "\n\n**Mains Analytical Perspective:**\n" + copy.summary.mainsAnalysis;
-  }
-  if (copy.summary.wayForward && !rawBrief.includes(copy.summary.wayForward)) {
-    rawBrief = rawBrief + "\n\n**Substantive Policy Reforms & Action Outline:**\n" + copy.summary.wayForward;
+  
+  // If the article is legacy style and does not have the structured detailedBrief, assemble it ONCE
+  if (!copy.summary.detailedBrief) {
+    if (copy.summary.background && !rawBrief.includes(copy.summary.background)) {
+      rawBrief = rawBrief + "\n\n**Historical & Socio-Economic Context:**\n" + copy.summary.background;
+    }
+    if (copy.summary.mainsAnalysis && !rawBrief.includes(copy.summary.mainsAnalysis)) {
+      rawBrief = rawBrief + "\n\n**Mains Analytical Perspective:**\n" + copy.summary.mainsAnalysis;
+    }
+    if (copy.summary.wayForward && !rawBrief.includes(copy.summary.wayForward)) {
+      rawBrief = rawBrief + "\n\n**Substantive Policy Reforms & Action Outline:**\n" + copy.summary.wayForward;
+    }
   }
   
-  const detailedBrief = cleanRoboticJargon(rawBrief);
+  const detailedBrief = deduplicateText(cleanRoboticJargon(rawBrief));
   
-  const prelimsFacts = cleanRoboticJargon(
+  const prelimsFacts = deduplicateText(cleanRoboticJargon(
     copy.summary.prelimsFacts || 
     "• Direct factual references and operational indicators under evaluation.\n• Central Ministry involvement and relevant timeline benchmarks."
-  );
+  ));
   
-  const whyMatters = cleanRoboticJargon(
+  const whyMatters = deduplicateText(cleanRoboticJargon(
     copy.summary.whyMatters || 
     copy.summary.whyImportant || 
     `GS Paper Syllabus focus: ${copy.category || "Governance"}`
-  );
+  ));
   
-  const oneLineRevision = cleanRoboticJargon(
+  const oneLineRevision = deduplicateText(cleanRoboticJargon(
     copy.summary.oneLineRevision || 
     copy.title || 
     ""
-  );
+  ));
 
-  let officialSources = cleanRoboticJargon(copy.summary.officialSources || "");
+  let officialSources = deduplicateText(cleanRoboticJargon(copy.summary.officialSources || ""));
   if (!officialSources) {
     const src = copy.source ? copy.source.toLowerCase() : "";
     if (src.includes("pib")) {
@@ -335,15 +403,26 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
     }
   }
 
-  copy.summary.detailedBrief = detailedBrief;
-  copy.summary.prelimsFacts = prelimsFacts;
-  copy.summary.whyMatters = whyMatters;
-  copy.summary.oneLineRevision = oneLineRevision;
-  copy.summary.officialSources = officialSources;
+  // Hard reset summary properties to prevent circular backward-compatible appends!
+  copy.summary = {
+    detailedBrief,
+    prelimsFacts,
+    whyMatters,
+    oneLineRevision,
+    officialSources,
+    
+    // Legacy support back-compat definitions
+    whatHappened: detailedBrief,
+    whyImportant: whyMatters
+  };
 
-  // Back-compat fields
-  copy.summary.whatHappened = detailedBrief;
-  copy.summary.whyImportant = whyMatters;
+  // Strip all legacy sections to completely murder the recursive loop
+  delete copy.summary.background;
+  delete copy.summary.mainsAnalysis;
+  delete copy.summary.wayForward;
+  delete copy.summary.constitutionalLinks;
+  delete copy.summary.pyqLinkage;
+  delete copy.summary.internationalRelevance;
 
   copy.title = cleanRoboticJargon(copy.title);
   copy.content = cleanRoboticJargon(copy.content);
@@ -1007,16 +1086,11 @@ async function triggerIngestForSource(source: any) {
             tags: [matchedCat, "Syllabus Sync", "Curated Brief"],
             readingTime: 3,
             summary: {
-              whatHappened: `${cleanTitle}. Centered coordinates outline critical developmental tracks under active national review schemes.`,
-              background: `Context derived from legislative/policy coverage from ${source.name}. National evaluation standards align with ongoing state planning and development frameworks.`,
-              whyImportant: `Aids critical administrative and socio-economic evaluation, improving governance transparency and structural capability assessments for civil services.`,
-              constitutionalLinks: `Directly maps to the official legislative domain of ${matchedCat}. For detailed statutory provisions, consult official ministry notifications.`,
-              internationalRelevance: `Meets national bilateral agreements or global developmental metrics where applicable.`,
-              prelimsFacts: `• Curated from standard publication: ${source.name}\n• Broad Category: ${matchedCat}\n• Published Date: ${new Date().toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"})}`,
-              mainsAnalysis: `Provides critical evaluation of policy execution. Highlights efficiency gains and procedural streamlining while identifying local implementation hurdles and budget bottlenecks.`,
-              wayForward: `Enhance administrative coordination, foster robust compliance frameworks, and leverage digital tools for systemic accountability.`,
-              pyqLinkage: `Related to fundamental question themes of GS Papers II & III on regulatory authorities and developmental programs.`,
-              oneLineRevision: `${cleanTitle} mapped under the regulatory grid of ${matchedCat}.`
+              detailedBrief: `${cleanTitle}. Highlights critical national policy implementations and regulatory developments. Key concerns focus on resource sharing, operational milestones, and administrative rollout timelines.`,
+              prelimsFacts: `• Curated from publication: ${source.name}\n• Broad Category: ${matchedCat}\n• Published Reference Date: ${new Date().toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"})}`,
+              whyMatters: `GS Paper Syllabus Focus: ${matchedCat} policy developments and regulatory actions. Key theme for GS Papers II and III.`,
+              oneLineRevision: `${cleanTitle} mapped under the executive regulatory grid of ${matchedCat}.`,
+              officialSources: `• Ministry of ${matchedCat} Gazette notifications\n• Press Information Bureau Government releases`
             },
             mcq: {
               question: `With reference to the news on "${cleanTitle}", which of the following statements represents its primary significance?`,
@@ -1063,10 +1137,11 @@ async function triggerIngestForSource(source: any) {
           }
         };
 
-        db.articles.push(newArticle);
+        const sanitizedArticle = sanitizeAndPolishUPSCArticle(newArticle);
+        db.articles.push(sanitizedArticle);
         added++;
 
-        emitLiveUpdate("ARTICLE_INGESTED", newArticle);
+        emitLiveUpdate("ARTICLE_INGESTED", sanitizedArticle);
       }
     }
   } catch (err: any) {
@@ -3385,7 +3460,7 @@ app.post("/api/admin/ingest", async (req, res) => {
                     }
                   };
 
-                  db.articles.push(newArticle);
+                  db.articles.push(sanitizeAndPolishUPSCArticle(newArticle));
                   addedCount++;
                 }
               } catch (geminiErr) {
@@ -3449,7 +3524,7 @@ app.post("/api/admin/ingest", async (req, res) => {
         }
       };
 
-      db.articles.push(newArticle);
+      db.articles.push(sanitizeAndPolishUPSCArticle(newArticle));
       addedCount++;
       fallbackIngested++;
     }
@@ -3611,9 +3686,10 @@ app.post("/api/admin/articles/add", async (req, res) => {
       };
     }
 
-    db.articles.push(newArticle);
+    const sanitized = sanitizeAndPolishUPSCArticle(newArticle);
+    db.articles.push(sanitized);
     saveDB(db);
-    res.status(201).json(newArticle);
+    res.status(201).json(sanitized);
 
   } catch (err: any) {
     console.error("Manual article addition failed:", err);
@@ -3668,9 +3744,10 @@ app.post("/api/admin/articles/:id/override", async (req, res) => {
     }
   }
 
-  db.articles[idx] = article;
+  const sanitized = sanitizeAndPolishUPSCArticle(article);
+  db.articles[idx] = sanitized;
   saveDB(db);
-  res.json(article);
+  res.json(sanitized);
 });
 
 // Search Endpoint (Fuzzy keyword lookups with transparency, suggestions, and trending counters)
