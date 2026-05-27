@@ -10,40 +10,43 @@ import crypto from "crypto";
 import { MongoClient } from "mongodb";
 
 // For ES Modules __dirname equivalents
-let __filename = "";
-let __dirname = "";
-try {
-  if (typeof import.meta !== "undefined" && import.meta && import.meta.url) {
-    __filename = fileURLToPath(import.meta.url);
-    __dirname = path.dirname(__filename);
-  }
-} catch (e) {
-  // CommonJS fallback: __filename and __dirname are already globally defined at runtime
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = 3000;
 const DB_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "db.json");
 
-// MongoDB Global Connectivity state
+// ── MongoDB Configuration ─────────────────────────────────────────────────────
+const MONGO_URI = process.env.MONGODB_URI ||
+  "mongodb+srv://root:123@cluster0.xjufbs2.mongodb.net/?appName=Cluster0";
+const MONGO_DB_NAME = "officerai_upsc";
+
 let mongoClient: MongoClient | null = null;
 let mongoDb: any = null;
+let mongoReady = false;
 
-async function connectMongo() {
-  if (process.env.MONGODB_URI) {
-    try {
-      if (!mongoClient) {
-        mongoClient = new MongoClient(process.env.MONGODB_URI);
-        await mongoClient.connect();
-        mongoDb = mongoClient.db("officerai_upsc");
-        console.log("Connected to MongoDB Atlas successfully");
-      }
-      return mongoDb;
-    } catch (err) {
-      console.error("Failed to connect to MongoDB Atlas, falling back to local storage:", err);
+// In-memory cache — single source of truth at runtime
+let cachedDB: any = null;
+
+async function connectMongo(): Promise<any> {
+  try {
+    if (!mongoClient) {
+      mongoClient = new MongoClient(MONGO_URI, {
+        serverSelectionTimeoutMS: 8000,
+        connectTimeoutMS: 8000,
+      });
+      await mongoClient.connect();
+      mongoDb = mongoClient.db(MONGO_DB_NAME);
+      mongoReady = true;
+      console.log(`[MongoDB] Connected → ${MONGO_DB_NAME}`);
     }
+    return mongoDb;
+  } catch (err) {
+    console.error("[MongoDB] Connection failed — using in-memory fallback:", err);
+    mongoReady = false;
+    return null;
   }
-  return null;
 }
 
 // Server-Sent Events (SSE) Client Pool
@@ -137,15 +140,16 @@ const initialArticles = [
     summary: {
       id: "sum-seed-1",
       articleId: "seed-1",
-      detailedBrief: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for green hydrogen production, usage, and export. The policy strategically addresses India’s COP26 Net-Zero 2070 commitments by reducing fossil fuel dependency and carbon intensities in hard-to-abate sectors (steel, cement, chemical refineries). By establishing SIGHT (Strategic Interventions for Green Hydrogen Transition) as its principal financial vehicle, the mission incentivizes domestic electrolyzer production and hydrogen generation. Key challenges include high electrolysis capital expenditures, storage infrastructure pipelines, and substantial pure water requirements.",
-      prelimsFacts: "• **Nodal Ministry**: Ministry of New and Renewable Energy (MNRE).\n• **Financial Outlay**: Initial budget of ₹19,744 crore; allocates ₹17,490 crore for SIGHT subsidies, ₹1,466 crore for pilot runs, and ₹400 crore for R&D.\n• **Target Output**: Establish 5 Million Metric Tonnes (MMT) annual production capacity of green hydrogen by 2030.\n• **Technical Definition**: Green hydrogen is produced via electrolysis of water powered entirely by renewable energy sources.",
-      whyMatters: "GS Paper II & III: Infrastructure planning, clean energy transition, environment conservation acts, and economic policy instruments.",
-      oneLineRevision: "The ₹19,744 Cr National Green Hydrogen Mission targets 5 MMT annual capacity by 2030, anchored by SIGHT incentives.",
-      officialSources: "• Ministry of New and Renewable Energy (MNRE) Gazetted Resolution\n• Press Information Bureau Cabinet Releases",
-      // Back-compat fields
-      whatHappened: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for green hydrogen.",
-      whyImportant: "GS Paper III: Infrastructure planning, clean energy transition, environment conservation acts, and economic policy instruments.",
-      prelimsFactsBackup: "• Nodal Ministry: MNRE.\n• Outlay: ₹19,744 Cr.\n• Target: 5 MMT by 2030."
+      whatHappened: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for the production, usage, and export of green hydrogen.",
+      background: "India has committed to achieving net-zero carbon emissions by 2070 at COP26. Fossil fuel imports compromise economic independence, calling for a transition to scalable, domestically generated green energy alternatives.",
+      whyImportant: "It targets the creation of over ₹8 lakh crore in investments, creation of over 6 lakh jobs, reduction of nearly 50 MMT of annual greenhouse gas emissions, and savings of ₹1 lakh crore in fossil fuel imports by 2030.",
+      constitutionalLinks: "Article 48A (Directive Principles of State Policy - Protection & improvement of environment & safeguarding of forests & wild life), Article 21 (Right to clean environment as part of Right to Life), and Seventh Schedule (List I - National planning under Union List).",
+      internationalRelevance: "Aligns with Paris Agreement commitments and NDC goals. Fosters strategic positioning against international green mandates like the EU's Carbon Border Adjustment Mechanism (CBAM).",
+      prelimsFacts: "• Under MNRE supervision.\n• SIGHT Program: Strategic Interventions for Green Hydrogen Transition.\n• Target of 5 MMT green hydrogen production capacity per annum by 2030.\n• Green Hydrogen definition: Generated via electrolysis of water powered by renewable source.",
+      mainsAnalysis: "Mains Answer writing point: Transitioning India's hard-to-abate sectors (steel, cement, refineries) into low-carbon operations. Overcomes intermittent renewable power challenges but faces bottlenecks in electrolysis high costs, infrastructure pipeline set up, and high water intensity.",
+      wayForward: "Establish strong public-private partnerships (PPP), subsidize electrolyzer manufacturing locally to build core domestic value chains, and install green hydrogen transport pipelines.",
+      pyqLinkage: "Mains 2021: Describe the major outcomes of the 26th session of the COP to UN UNFCCC. Prelims 2023: Questions regarding solar power and other green energy schemes.",
+      oneLineRevision: "₹19,744 Cr National Green Hydrogen Mission seeks 5 MMT production capacity by 2030, saving imports & emissions."
     },
     mcq: {
       id: "mcq-seed-1",
@@ -159,48 +163,50 @@ const initialArticles = [
         "Neither 1 nor 2"
       ],
       correctAnswer: 2,
-      explanation: "Both statements 1 and 2 are correct. SIGHT (Strategic Interventions for Green Hydrogen Transition) is the primary incentive scheme within the Mission, focusing on local electrolyzer manufacturing and actual green hydrogen yield of at least 5 MMT per annum by 2030.",
+      explanation: "Both statements 1 and 2 are absolutely correct. SIGHT (Strategic Interventions for Green Hydrogen Transition) provides financial incentives for setting up electrolyzer manufacturing plants and producing green hydrogen. The target for 2030 is indeed at least 5 MMT per annum.",
       tags: ["Environment", "Green Hydrogen"]
     }
   },
   {
     id: "seed-2",
-    title: "Cabinet Approves Five-Year Extension of Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY)",
-    source: "PIB (Press Information Bureau)",
-    sourcePriority: "VERY HIGH" as const,
+    title: "India-Middle East-Europe Economic Corridor (IMEC) Signed at G20 Summit",
+    source: "Ministry of External Affairs",
+    sourcePriority: "HIGH" as const,
     articleHash: "hash-seed-2",
     ingestionTimestamp: "2026-05-23T15:30:00Z",
-    relevanceScore: 10,
-    category: "Welfare Schemes",
-    tags: ["PMGKAY", "Food Security", "Welfare Schemes", "Public Distribution System", "NFSA", "Poverty Alleviation"],
-    content: "The Union Cabinet has approved the extension of the Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY) for another five years starting from January 1, 2024. Under this food security scheme, free foodgrains will be provided to about 81.35 crore beneficiaries under the National Food Security Act (NFSA), 2013, at an estimated economic cost of ₹11.80 lakh crore to the Central Government. The scheme ensures nationwide food security while mitigating the fiscal and inflationary pressures on marginalized households.",
+    relevanceScore: 9,
+    category: "International Relations",
+    tags: ["IMEC", "G20 Summit", "Connectivity", "Belt and Road Initiative", "Geopolitics"],
+    content: "A memorandum of understanding (MoU) on the India-Middle East-Europe Economic Corridor (IMEC) was signed by India, USA, Saudi Arabia, UAE, European Union, Italy, France, and Germany. The IMEC will consist of two separate corridors: the East Corridor connecting India to the Arabian Gulf, and the Northern Corridor connecting the Arabian Gulf to Europe. It includes a railway corridor, ship-to-rail transit network, and high-speed data cables.",
     readingTime: 4,
     summary: {
       id: "sum-seed-2",
       articleId: "seed-2",
-      detailedBrief: "The Union Cabinet has institutionalized the free foodgrain policy by approving a five-year extension of the Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY) from January 1, 2024, to December 31, 2028. This decision integrates the emergency pandemic-era welfare scheme directly with the National Food Security Act (NFSA), 2013. The economic outlay of ₹11.80 lakh crore over five years will be fully absorbed by the Central Government, shielding 81.35 crore vulnerable citizens from food price volatility. This structural transition raises vital fiscal and macroeconomic debates: it reduces extreme household consumption vulnerability but places a persistent burden on the central food subsidy bill, requiring streamlined FCI procurement and buffer stock management.",
-      prelimsFacts: "• **Nodal Ministry**: Ministry of Consumer Affairs, Food and Public Distribution.\n• **Beneficiary Base**: Covers ~81.35 crore cardholders spanning Antyodaya Anna Yojana (AAY) and Priority Households (PHH).\n• **Structure of Entitlement**: Priority Households receive 5 kg per person per month, while AAY households receive 35 kg per family per month free of cost.\n• **Funding Pattern**: Central Sector Scheme; 100% funded by the Central Government.\n• **Constitutional Basis**: Direct legislative manifestation of Article 47 (State duty to improve nutrition, standard of living and public health) read under Article 21 (Right to Life).",
-      whyMatters: "GS Paper II & III: Food security, welfare federalism, public distribution system (PDS) reforms, agricultural procurement, and fiscal deficits.",
-      oneLineRevision: "PMGKAY is extended for five years (2024–2028), securing free foodgrains for 81.35 crore NFSA cardholders at a central cost of ₹11.80 lakh crore.",
-      officialSources: "• Department of Food and Public Distribution Notifications\n• Press Information Bureau Cabinet Briefing Sheets\n• National Food Security Act (NFSA), 2013 Statutory Guidelines",
-      // Back-compat fields
-      whatHappened: "The Union Cabinet has institutionalized the free foodgrain policy by approving a five-year extension of PMGKAY.",
-      whyImportant: "GS Paper II & III: Food security, welfare federalism, public distribution system (PDS) reforms, agricultural procurement, and fiscal deficits."
+      whatHappened: "A historic multinational rail and shipping corridor (IMEC) was launched on the sidelines of the G20 summit, linking India to Europe via West Asia.",
+      background: "Designed as a strategic counterweight to China's Belt and Road Initiative (BRI). It leverages existing maritime routes and railway projects to establish an efficient transport network.",
+      whyImportant: "Improves economic integration, reduces transit times between India and Europe by 40%, lowers greenhouse gases, and bypasses challenging transit pathways through Pakistan/Afghanistan.",
+      constitutionalLinks: "Article 253 (Legislation for giving effect to international agreements) and Entry 10 of List I (Foreign Affairs and treaties).",
+      internationalRelevance: "Reshapes West Asian geopolitics. Anchors USA-India-Saudi-UAE economic alignment. Addresses infrastructure gaps in the Middle East and enhances transcontinental supply chains.",
+      prelimsFacts: "• Ports involved in India: Mundra and Kandla (Gujarat), JNPT (Mumbai).\n• East Corridor: India to Arabian Gulf (UAE/Saudi).\n• Northern Corridor: Arabian Gulf to European countries (Greece/Italy/France).",
+      mainsAnalysis: "Addresses infrastructure connectivity, counters geopolitical dominance of China's BRI, enhances strategic leverage of India in the Gulf region. Vulnerabilities include regional geopolitical instability (e.g., Suez Canal or Red Sea tensions) and massive financial coordination needs among disparate nations.",
+      wayForward: "Standardize customs regulations, fast-track rail construction in dry desert corridors, and maintain strong strategic autonomy while balancing regional relations.",
+      pyqLinkage: "Mains 2022: 'China's Belt and Road Initiative poses a direct challenge to India's sovereignty'. Discuss. GS Paper II.",
+      oneLineRevision: "IMEC links India to Europe via UAE, Saudi Arabia, Jordan, and Israel/Greece, serving as a counter to BRI."
     },
     mcq: {
       id: "mcq-seed-2",
       articleId: "seed-2",
-      articleTitle: "PMGKAY Five Year Extension",
-      question: "With reference to the Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY), which of the following statements is / are correct?\n1. It is a Central Sector Scheme under which the entire financial liability of food subsidy is borne by the Union Government.\n2. Both Antyodaya Anna Yojana (AAY) and Priority Households (PHH) beneficiaries receive exactly 5 kg of foodgrains per person per month under the scheme.\nSelect the correct answer using the code given below:",
+      articleTitle: "India-Middle East-Europe Economic Corridor",
+      question: "Which of the following nations/bodies are signatories to the India-Middle East-Europe Economic Corridor (IMEC) MoU?\n1. India\n2. United States of America\n3. Iran\n4. European Union\nSelect the correct answer using the code given below:",
       options: [
-        "1 only",
-        "2 only",
-        "Both 1 and 2",
-        "Neither 1 nor 2"
+        "1, 2, and 3 only",
+        "1, 2, and 4 only",
+        "2, 3, and 4 only",
+        "1, 2, 3, and 4"
       ],
-      correctAnswer: 0,
-      explanation: "Statement 1 is correct: PMGKAY is a Central Sector Scheme with 100% funding by the Union. Statement 2 is incorrect because while PHH cardholders receive 5 kg of foodgrains per person per month, AAY households receive a block entitlement of 35 kg per family per month.",
-      tags: ["Welfare Schemes", "Food Security", "PMGKAY"]
+      correctAnswer: 1,
+      explanation: "Iran is NOT a signatory or member of IMEC. Signatories include India, the US, Saudi Arabia, the UAE, the European Union, France, Germany, and Italy. Bypassing Iran/Pakistan is a strategic element of IMEC.",
+      tags: ["International Relations", "IMEC"]
     }
   },
   {
@@ -218,14 +224,16 @@ const initialArticles = [
     summary: {
       id: "sum-seed-3",
       articleId: "seed-3",
-      detailedBrief: "The enactment of the Digital Personal Data Protection (DPDP) Act, 2023, represents India's first standalone statutory framework for digital privacy, concluding a six-year legislative process triggered by the Supreme Court's landmark Puttaswamy ruling. The Act applies strictly to processed digital personal data and introduces a dual structure of rights and duties between the 'Data Principal' (individual) and the 'Data Fiduciary' (processing organization). While it modernizes consent mechanics and mandates purpose limitation, critics voice serious concerns over broad governmental exemptions, potential dilution of the Right to Information (RTI) Act, and the lack of independent structural appointments to the newly formed adjudicatory body.",
-      prelimsFacts: "• **Regulatory Body**: Establishes the Data Protection Board of India (DPBI) for compliance and dispute resolution.\n• **Consent Parameters**: Consent must be free, specific, informed, unconditional, and unambiguous, supported by an easy withdraw option.\n• **Fiduciary Liabilities**: Places strict obligations for data security; failing to prevent personal data breach carries penalties up to ₹250 crore.\n• **Judicial Foundation**: Grounded in K.S. Puttaswamy v. Union of India (2017) establishing the Right to Privacy under Article 21.",
-      whyMatters: "GS Paper II: Fundamental Rights (Article 21), statutory regulatory authorities, digital technology governance, and federal regulatory balances.",
-      oneLineRevision: "DPDP Act 2023 governs digital personal data processing, backed by the Data Protection Board of India with breach penalties up to ₹250 crore.",
-      officialSources: "• Gazette of India Official Legislation (DPDP Act, 2023)\n• PRS Legislative Research Analysis\n• Supreme Court K.S. Puttaswamy Judgment Sheets",
-      // Back-compat fields
-      whatHappened: "The Parliament enacted the Digital Personal Data Protection Act, 2023, sealing data privacy frameworks.",
-      whyImportant: "GS Paper II: Fundamental Rights (Article 21), statutory regulatory authorities, digital technology governance."
+      whatHappened: "The Parliament of India enacted the Digital Personal Data Protection (DPDP) Act, 2023, sealing a six-year legislative effort since the landmark Puttawamy decision on privacy.",
+      background: "In K.S. Puttaswamy v. Union of India (2017), the Supreme Court ruled that the Right to Privacy is a fundamental right under Article 21, recommending a dedicated data protective statutory mechanism.",
+      whyImportant: "It applies to digital personal data processed within India, and outside India if it is in connection with offering goods/services to Indian citizens. Establishes the Data Protection Board of India.",
+      constitutionalLinks: "Article 21 (Right to Privacy), Article 19 (Right to Speech versus Freedom of Trade), and Seventh Schedule (List I Union List Entry 31: Posts, telegraphs, telephones, wireless, broadcasting).",
+      internationalRelevance: "Corresponds dynamically to EU General Data Protection Regulation (GDPR) principles of purpose limitation, data minimisation, and storage limitation.",
+      prelimsFacts: "• Data Principal: Person whose data is processed.\n• Data Fiduciary: Organization determining the purpose of processing.\n• DPBI: Data Protection Board of India (adjudicating body).\n• Max penalty of ₹250 crore for key data breaches.",
+      mainsAnalysis: "Strikes a neat balance between data-led economic expansion and individual privacy rights of citizens. Key flaws highlighted by advocates include extensive exemptions granted to standard Central Government offices, potential weakening of Right to Information (RTI) Act provisions, and a Board whose composition is appointed purely by the Union Executive.",
+      wayForward: "Ensure operational independence of the Data Protection Board, construct absolute safety clauses for national public databases, and draft clear subordinate rules.",
+      pyqLinkage: "Mains 2018: Examined PUTTASWAMY judgment and right to privacy implications relative to surveillance. GS Paper II.",
+      oneLineRevision: "DPDP Act 2023 secures personal digital data processing under Puttaswamy guidelines, setting up DPBI with penalties up to ₹250 Cr."
     },
     mcq: {
       id: "mcq-seed-3",
@@ -239,411 +247,257 @@ const initialArticles = [
         "National Cyber Security Alliance (NCSA)"
       ],
       correctAnswer: 1,
-      explanation: "Under the DPDP Act, 2023, the Data Protection Board of India (DPBI) is established as an independent adjudicating body in charge of investigating leaks, compliance failures, and imposing statutory penalties up to ₹250 crore.",
+      explanation: "Under the DPDP Act, 2023, the Data Protection Board of India (DPBI) is established as an independent adjudicating body in charge of looking into complaints, monitoring compliance, and imposing penalties.",
       tags: ["Governance", "DPDP Act"]
     }
   }
 ];
 
+// ─── Content helpers ─────────────────────────────────────────────────────────
+// These pass article data through cleanly — no garbling, no robotic rewrites.
+// The summaries coming from Gemini or the seed data are already good quality.
+
 function cleanRoboticJargon(text: string): string {
   if (!text) return "";
-  let polished = text;
-  
-  // Clean up and discard typical generic AI boilerplate and forced governance/MBA jargon
+  // Light cleanup only — remove the most egregious MBA-speak
   const replacements: Record<string, string> = {
-    "institutional capability enhancement": "agency planning",
+    "institutional capability enhancement": "capacity building",
     "procedural streamlining": "process simplification",
     "framework alignment": "policy integration",
-    "developmental coordination": "strategic coordination",
-    "implementation bottlenecks": "delays",
-    "administrative synchronization": "regulatory harmony",
-    "state planning indicators": "developmental indices",
-    "capability assessment frameworks": "performance benchmarks",
-    "institutional strengthening": "capacity building",
-    "procedural reforms": "improvements",
-    "technology-first implementation": "digital service delivery",
-    "administrative streamlining": "process simplification",
-    "governance transparency": "accountability",
-    "structural review": "assessment",
-    "vibrant ecosystem": "productive environment",
-    "holistic approach": "strategy",
-    "structural capability": "capacity",
-    "administrative simplification": "simplification",
+    "developmental coordination": "coordination",
+    "administrative synchronization": "coordination",
     "synergistic frameworks": "cooperative systems",
-    "resource optimization": "budget planning"
+    "resource optimization": "efficient use of resources",
+    "holistic approach": "comprehensive approach",
+    "vibrant ecosystem": "active environment",
   };
-
-  for (const [key, val] of Object.entries(replacements)) {
-    const rx = new RegExp(key, "gi");
-    polished = polished.replace(rx, val);
+  let out = text;
+  for (const [k, v] of Object.entries(replacements)) {
+    out = out.replace(new RegExp(k, "gi"), v);
   }
-  return polished;
-}
-
-function deduplicateText(text: string): string {
-  if (!text) return "";
-  
-  const lines = text.split("\n");
-  const seenParagraphs = new Set<string>();
-  const seenSentences = new Set<string>();
-  const resultLines: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      resultLines.push("");
-      continue;
-    }
-
-    // Header deduplication
-    const lower = trimmed.toLowerCase();
-    if (lower.includes("mains analytical") || lower.includes("background:") || lower.includes("context:") || lower.includes("way forward:") || lower.includes("detailed intelligence brief:")) {
-      const headingKey = "heading_" + lower.replace(/[^a-z0-9]/g, "");
-      if (seenParagraphs.has(headingKey)) {
-        continue;
-      }
-      seenParagraphs.add(headingKey);
-    }
-
-    // Sentence-level deduplication inside paragraphs to check for runaway generator repeats
-    const sentences = trimmed.split(/(?<=[.?!])\s+/);
-    const uniqueSentences: string[] = [];
-    for (const sentence of sentences) {
-      const sTrim = sentence.trim();
-      if (!sTrim) continue;
-      
-      const normalizedSentence = sTrim.toLowerCase().replace(/[^a-z0-9]/g, "").substring(0, 100);
-      if (seenSentences.has(normalizedSentence)) {
-        continue;
-      }
-      seenSentences.add(normalizedSentence);
-      uniqueSentences.push(sTrim);
-    }
-
-    if (uniqueSentences.length > 0) {
-      const assembledLine = uniqueSentences.join(" ");
-      const normalizedLine = assembledLine.toLowerCase().replace(/[^a-z0-9]/g, "").substring(0, 150);
-      if (seenParagraphs.has(normalizedLine)) {
-        continue;
-      }
-      seenParagraphs.add(normalizedLine);
-      resultLines.push(assembledLine);
-    }
-  }
-
-  // Joint text, clean multiple empty lines
-  let cleanedText = resultLines.filter((l, i, arr) => l !== "" || (i > 0 && arr[i-1] !== "")).join("\n").trim();
-
-  // Strict word count threshold: truncate to prevent runway AI filler
-  const words = cleanedText.split(/\s+/);
-  if (words.length > 600) {
-    cleanedText = words.slice(0, 500).join(" ") + "... [Abridged for High-Density Strategic Briefing]";
-  }
-
-  return cleanedText;
+  return out;
 }
 
 function sanitizeAndPolishUPSCArticle(article: any): any {
   if (!article) return article;
-  
-  const copy = JSON.parse(JSON.stringify(article));
-  
-  if (!copy.summary) {
-    copy.summary = {};
-  }
-  
-  // Extract or build a beautiful detailed intelligence brief with zero filler text
-  let rawBrief = copy.summary.detailedBrief || copy.summary.whatHappened || copy.content || "";
-  
-  // If the article is legacy style and does not have the structured detailedBrief, assemble it ONCE
-  if (!copy.summary.detailedBrief) {
-    if (copy.summary.background && !rawBrief.includes(copy.summary.background)) {
-      rawBrief = rawBrief + "\n\n**Historical & Socio-Economic Context:**\n" + copy.summary.background;
-    }
-    if (copy.summary.mainsAnalysis && !rawBrief.includes(copy.summary.mainsAnalysis)) {
-      rawBrief = rawBrief + "\n\n**Mains Analytical Perspective:**\n" + copy.summary.mainsAnalysis;
-    }
-    if (copy.summary.wayForward && !rawBrief.includes(copy.summary.wayForward)) {
-      rawBrief = rawBrief + "\n\n**Substantive Policy Reforms & Action Outline:**\n" + copy.summary.wayForward;
-    }
-  }
-  
-  const detailedBrief = deduplicateText(cleanRoboticJargon(rawBrief));
-  
-  const prelimsFacts = deduplicateText(cleanRoboticJargon(
-    copy.summary.prelimsFacts || 
-    "• Direct factual references and operational indicators under evaluation.\n• Central Ministry involvement and relevant timeline benchmarks."
-  ));
-  
-  const whyMatters = deduplicateText(cleanRoboticJargon(
-    copy.summary.whyMatters || 
-    copy.summary.whyImportant || 
-    `GS Paper Syllabus focus: ${copy.category || "Governance"}`
-  ));
-  
-  const oneLineRevision = deduplicateText(cleanRoboticJargon(
-    copy.summary.oneLineRevision || 
-    copy.title || 
-    ""
-  ));
+  const a = { ...article };
 
-  let officialSources = deduplicateText(cleanRoboticJargon(copy.summary.officialSources || ""));
+  // Ensure summary exists
+  if (!a.summary) a.summary = {};
+
+  // Build detailedBrief from whichever field is most complete
+  const brief = a.summary.detailedBrief
+    || a.summary.whatHappened
+    || a.content
+    || "";
+
+  // For legacy catalog items: append background/analysis/wayForward ONCE if not already included
+  let fullBrief = brief;
+  if (!a.summary.detailedBrief) {
+    if (a.summary.background && !fullBrief.includes(a.summary.background.substring(0, 40))) {
+      fullBrief += "\n\n**Background:** " + a.summary.background;
+    }
+    if (a.summary.mainsAnalysis && !fullBrief.includes(a.summary.mainsAnalysis.substring(0, 40))) {
+      fullBrief += "\n\n**Analysis:** " + a.summary.mainsAnalysis;
+    }
+    if (a.summary.wayForward && !fullBrief.includes(a.summary.wayForward.substring(0, 40))) {
+      fullBrief += "\n\n**Way Forward:** " + a.summary.wayForward;
+    }
+  }
+
+  // Derive clean summary fields — prefer existing structured data
+  const detailedBrief  = cleanRoboticJargon(fullBrief);
+  const prelimsFacts   = cleanRoboticJargon(a.summary.prelimsFacts || "");
+  const whyMatters     = cleanRoboticJargon(a.summary.whyMatters || a.summary.whyImportant || `Relevant to GS Papers: ${a.category || "Governance"}`);
+  const oneLineRevision = cleanRoboticJargon(a.summary.oneLineRevision || a.title || "");
+
+  // Official sources: use existing or derive a sensible default
+  let officialSources = cleanRoboticJargon(a.summary.officialSources || "");
   if (!officialSources) {
-    const src = copy.source ? copy.source.toLowerCase() : "";
-    if (src.includes("pib")) {
-      officialSources = "• Press Information Bureau (PIB India) Cabinet Releases\n• Government of India Official Gazette Notifications";
-    } else if (src.includes("prs")) {
-      officialSources = "• PRS Legislative Research Parliamentary Bill Summaries\n• Standing Committee Reports, Parliament of India";
-    } else if (copy.category === "Economy" || copy.category === "Agriculture") {
-      officialSources = "• Reserve Bank of India (RBI) Notifications & Policy Statements\n• Union Ministry of Finance Reports\n• Budget & Economic Survey of India Tables";
-    } else if (copy.category === "Environment") {
-      officialSources = "• Ministry of Environment, Forest and Climate Change (MoEFCC) Directives\n• United Nations Climate Change Secretariat (UNFCCC) Agreements";
-    } else {
-      officialSources = `• Official Gazette of India Publications\n• Nodal Department Circulars & Press Bulletins`;
-    }
+    const src = (a.source || "").toLowerCase();
+    if (src.includes("pib"))      officialSources = "• Press Information Bureau (PIB)
+• Official Gazette of India";
+    else if (src.includes("prs")) officialSources = "• PRS Legislative Research
+• Standing Committee Reports";
+    else if (src.includes("rbi")) officialSources = "• Reserve Bank of India Notifications
+• Ministry of Finance";
+    else if (src.includes("isro"))officialSources = "• ISRO Official Releases
+• Ministry of Earth Sciences";
+    else if (src.includes("un"))  officialSources = "• UN News
+• UNFCCC Secretariat";
+    else                          officialSources = "• Official Gazette of India
+• Nodal Ministry Press Releases";
   }
 
-  // Hard reset summary properties to prevent circular backward-compatible appends!
-  copy.summary = {
+  // Write back a clean, flat summary object — no circular fields
+  a.summary = {
     detailedBrief,
     prelimsFacts,
     whyMatters,
     oneLineRevision,
     officialSources,
-    
-    // Legacy support back-compat definitions
-    whatHappened: detailedBrief,
-    whyImportant: whyMatters
+    // Back-compat aliases used by the frontend
+    whatHappened:  detailedBrief,
+    whyImportant:  whyMatters,
+    // Preserve constitutional links if present
+    constitutionalLinks: a.summary.constitutionalLinks || "",
+    // Preserve PYQ linkage if present
+    pyqLinkage: a.summary.pyqLinkage || "",
   };
 
-  // Strip all legacy sections to completely murder the recursive loop
-  delete copy.summary.background;
-  delete copy.summary.mainsAnalysis;
-  delete copy.summary.wayForward;
-  delete copy.summary.constitutionalLinks;
-  delete copy.summary.pyqLinkage;
-  delete copy.summary.internationalRelevance;
-
-  copy.title = cleanRoboticJargon(copy.title);
-  copy.content = cleanRoboticJargon(copy.content);
-  if (copy.mcq) {
-    copy.mcq.question = cleanRoboticJargon(copy.mcq.question);
-    copy.mcq.explanation = cleanRoboticJargon(copy.mcq.explanation);
-    if (copy.mcq.options) {
-      copy.mcq.options = copy.mcq.options.map((opt: string) => cleanRoboticJargon(opt));
-    }
-  }
-  
-  return copy;
+  return a;
 }
 
-// In-memory cache for MongoDB-driven store
-let cachedDB: any = null;
-
-// Load whole database safely from in-memory cache synchronized with MongoDB
-function loadDB() {
-  if (cachedDB) {
-    return cachedDB;
-  }
-  
-  // Base default fallback when MongoDB is not loaded yet
-  const defaultDB = {
+// loadDB — returns in-memory cache (populated by syncWithMongo on boot)
+function loadDB(): any {
+  if (cachedDB) return cachedDB;
+  // Cold fallback if syncWithMongo hasn't run yet
+  const fallback = {
     users: [] as any[],
     articles: [...initialArticles].map(a => sanitizeAndPolishUPSCArticle(a)),
     bookmarks: [] as any[],
     revision_cards: [] as any[],
-    ingestion_logs: [
-      {
-        id: "log-seed",
-        timestamp: new Date().toISOString(),
-        status: "SUCCESS",
-        message: "Database initialized with core UPSC seed articles.",
-        articlesProcessed: 3,
-        articlesIngested: 3
-      }
-    ],
+    ingestion_logs: [{
+      id: "log-seed",
+      timestamp: new Date().toISOString(),
+      status: "SUCCESS",
+      message: "Database initialized with core UPSC seed articles.",
+      articlesProcessed: 3,
+      articlesIngested: 3
+    }],
     sources: [...initialSources],
   };
-  cachedDB = defaultDB;
+  cachedDB = fallback;
   return cachedDB;
 }
 
-// MongoDB Async Propagation helper for individual collections
+// ── MongoDB helpers ──────────────────────────────────────────────────────────
 async function saveToMongo(key: string, dataArray: any[]) {
   const mDb = await connectMongo();
-  if (!mDb) return;
+  if (!mDb || !dataArray || dataArray.length === 0) return;
   try {
-    const colName = key === "revision_cards" ? "revision_cards" : key;
-    const col = mDb.collection(colName);
-    
-    // Get all current ids in state array
-    const validIds = dataArray.map(item => item && item.id).filter(Boolean);
-    
-    // Delete any documents in Mongo that are no longer in our state
-    if (validIds.length > 0) {
-      await col.deleteMany({ id: { $nin: validIds } });
-    } else {
-      await col.deleteMany({});
-    }
-
-    // Upsert current items
-    for (const item of dataArray) {
-      if (item && item.id) {
-        // Strip out Mongo _id to avoid Immutable ID error on updates
-        const { _id, ...updateDoc } = item;
-        await col.updateOne({ id: item.id }, { $set: updateDoc }, { upsert: true });
-      }
-    }
+    const col = mDb.collection(key);
+    const ops = dataArray
+      .filter((item) => item && item.id)
+      .map((item) => {
+        const { _id, ...doc } = item;
+        return { updateOne: { filter: { id: item.id }, update: { $set: doc }, upsert: true } };
+      });
+    if (ops.length > 0) await col.bulkWrite(ops, { ordered: false });
   } catch (err) {
-    console.error(`MongoDB write failure for collection ${key}:`, err);
+    console.error(`[MongoDB] saveToMongo error for '${key}':`, err);
   }
 }
 
-// MongoDB Sync on startup to load all data directly from Atlas database collections
-async function syncWithMongo() {
-  const db = {
-    users: [] as any[],
-    articles: [] as any[],
-    bookmarks: [] as any[],
-    revision_cards: [] as any[],
-    ingestion_logs: [] as any[],
-    sources: [] as any[]
-  };
-
+async function loadFromMongo(key: string): Promise<any[]> {
   const mDb = await connectMongo();
+  if (!mDb) return [];
+  try {
+    const docs = await mDb.collection(key).find({}).toArray();
+    return docs.map(({ _id, ...rest }: any) => rest);
+  } catch (err) {
+    console.error(`[MongoDB] loadFromMongo error for '${key}':`, err);
+    return [];
+  }
+}
+
+// ── syncWithMongo: MongoDB is the primary source of truth ────────────────────
+async function syncWithMongo(): Promise<any> {
+  const mDb = await connectMongo();
+
+  // No Mongo — serve from initialArticles in-memory
   if (!mDb) {
-    console.log("No MongoDB Atlas connection available. Using local cache defaults.");
+    console.warn("[DB] MongoDB unreachable — serving from in-memory seed data.");
     if (!cachedDB) {
-      db.articles = [...initialArticles];
-      db.sources = [...initialSources];
-      db.ingestion_logs = [
-        {
+      cachedDB = {
+        users: [] as any[],
+        articles: [...initialArticles].map(a => sanitizeAndPolishUPSCArticle(a)),
+        bookmarks: [] as any[],
+        revision_cards: [] as any[],
+        ingestion_logs: [{
           id: "log-seed",
           timestamp: new Date().toISOString(),
           status: "SUCCESS",
-          message: "Database initialized with core UPSC seed articles (Fallback In-Memory).",
-          articlesProcessed: 3,
-          articlesIngested: 3
-        }
-      ];
-      cachedDB = db;
+          message: "Database initialized with core UPSC seed articles (no MongoDB).",
+          articlesProcessed: 3, articlesIngested: 3
+        }],
+        sources: [...initialSources],
+      };
     }
     return cachedDB;
   }
 
-  try {
-    const collectionsToSync = ["users", "articles", "sources", "bookmarks", "revision_cards", "ingestion_logs", "mcq_attempts"];
-    
-    for (const key of collectionsToSync) {
-      const colName = key === "revision_cards" ? "revision_cards" : key;
-      const col = mDb.collection(colName);
-      
-      let mongoList = await col.find({}).toArray();
-      
-      // Seed validation: If collection is empty, seed it with defaults
-      if (mongoList.length === 0) {
-        let seeds: any[] = [];
-        if (key === "articles") {
-          seeds = [...initialArticles];
-          for (const catalogTopic of FALLBACK_UPSC_CATALOG) {
-            const hash = crypto.createHash("md5").update(catalogTopic.title).digest("hex");
-            if (!seeds.some((s: any) => s.articleHash === hash || s.title.toLowerCase() === catalogTopic.title.toLowerCase())) {
-              const articleId = "art-" + crypto.randomUUID().substring(0, 8);
-              const mcqId = "mcq-" + crypto.randomUUID().substring(0, 8);
-              const sumId = "sum-" + crypto.randomUUID().substring(0, 8);
-              seeds.push({
-                id: articleId,
-                title: catalogTopic.title,
-                source: catalogTopic.source,
-                sourcePriority: catalogTopic.sourcePriority,
-                articleHash: hash,
-                ingestionTimestamp: new Date().toISOString(),
-                relevanceScore: 9,
-                category: catalogTopic.category,
-                tags: catalogTopic.tags,
-                content: catalogTopic.content,
-                readingTime: 3,
-                summary: {
-                  id: sumId,
-                  articleId,
-                  ...catalogTopic.summary
-                },
-                mcq: {
-                  id: mcqId,
-                  articleId,
-                  articleTitle: catalogTopic.title,
-                  ...catalogTopic.mcq
-                }
-              });
-            }
+  const db: any = {};
+  const keys = ["users", "articles", "sources", "bookmarks", "revision_cards", "ingestion_logs"];
+
+  for (const key of keys) {
+    let docs = await loadFromMongo(key);
+
+    // Seed empty collections on first boot
+    if (docs.length === 0) {
+      let seeds: any[] = [];
+      if (key === "articles") {
+        seeds = [...initialArticles];
+        for (const topic of FALLBACK_UPSC_CATALOG) {
+          const hash = crypto.createHash("md5").update(topic.title).digest("hex");
+          if (!seeds.some((s: any) => s.articleHash === hash || s.title.toLowerCase() === topic.title.toLowerCase())) {
+            const articleId = "art-" + crypto.randomUUID().substring(0, 8);
+            seeds.push({
+              id: articleId,
+              ...topic,
+              articleHash: hash,
+              ingestionTimestamp: new Date().toISOString(),
+            });
           }
-        } else if (key === "sources") {
-          seeds = [...initialSources];
-        } else if (key === "ingestion_logs") {
-          seeds = [
-            {
-              id: "log-seed",
-              timestamp: new Date().toISOString(),
-              status: "SUCCESS",
-              message: "Database initialized with core UPSC seed articles.",
-              articlesProcessed: 3,
-              articlesIngested: 3
-            }
-          ];
         }
-
-        if (seeds.length > 0) {
-          await col.insertMany(seeds);
-          mongoList = await col.find({}).toArray();
-        }
+        seeds = seeds.map(a => sanitizeAndPolishUPSCArticle(a));
+      } else if (key === "sources") {
+        seeds = [...initialSources];
+      } else if (key === "ingestion_logs") {
+        seeds = [{
+          id: "log-seed",
+          timestamp: new Date().toISOString(),
+          status: "SUCCESS",
+          message: "Database seeded with core UPSC articles.",
+          articlesProcessed: initialArticles.length,
+          articlesIngested: initialArticles.length
+        }];
       }
-
-      // Map and clean up documents
-      db[key] = mongoList.map((item: any) => {
-        const { _id, ...rest } = item;
-        return rest;
-      });
-      
-      // Polish articles to high-density clean format
-      if (key === "articles" && db.articles) {
-        db.articles = db.articles.map((a: any) => sanitizeAndPolishUPSCArticle(a));
+      if (seeds.length > 0) {
+        console.log(`[MongoDB] Seeding '${key}' with ${seeds.length} documents…`);
+        await saveToMongo(key, seeds);
+        docs = seeds;
       }
+    } else if (key === "articles") {
+      docs = docs.map((a: any) => sanitizeAndPolishUPSCArticle(a));
     }
-
-    cachedDB = db;
-    console.log("MongoDB Atlas collections loaded successfully as the primary data store.");
-  } catch (err) {
-    console.error("Error loading/seeding data from MongoDB Atlas on startup:", err);
-    if (!cachedDB) {
-      db.articles = [...initialArticles].map(a => sanitizeAndPolishUPSCArticle(a));
-      db.sources = [...initialSources];
-      cachedDB = db;
-    }
+    db[key] = docs;
   }
 
+  cachedDB = db;
+  console.log(`[DB] Ready — ${db.articles?.length ?? 0} articles, ${db.sources?.length ?? 0} sources in MongoDB.`);
   return cachedDB;
 }
 
-// Save database state synchronously to memory cache and asynchronously in-full directly to MongoDB Atlas
+// saveDB — writes to in-memory cache (sync) + MongoDB (async fire-and-forget)
 function saveDB(data: any) {
   try {
-    if (data && data.articles) {
+    if (data?.articles) {
       data.articles = data.articles.map((a: any) => sanitizeAndPolishUPSCArticle(a));
     }
     cachedDB = data;
-    if (process.env.MONGODB_URI) {
-      Promise.all([
-        saveToMongo("users", data.users || []),
-        saveToMongo("articles", data.articles || []),
-        saveToMongo("sources", data.sources || []),
-        saveToMongo("bookmarks", data.bookmarks || []),
-        saveToMongo("revision_cards", data.revision_cards || []),
-        saveToMongo("mcq_attempts", data.mcq_attempts || []),
-        saveToMongo("ingestion_logs", data.ingestion_logs || [])
-      ]).catch((err) => console.error("Async MongoDB save propagation failed:", err));
-    }
+    // Fire-and-forget to MongoDB
+    Promise.all([
+      saveToMongo("users", data.users || []),
+      saveToMongo("articles", data.articles || []),
+      saveToMongo("sources", data.sources || []),
+      saveToMongo("bookmarks", data.bookmarks || []),
+      saveToMongo("revision_cards", data.revision_cards || []),
+      saveToMongo("ingestion_logs", data.ingestion_logs || []),
+      saveToMongo("mcq_attempts", data.mcq_attempts || []),
+    ]).catch(err => console.error("[MongoDB] saveDB async error:", err));
   } catch (err) {
-    console.error("Error writing data to database cache:", err);
+    console.error("[DB] saveDB error:", err);
   }
 }
 
@@ -681,345 +535,27 @@ function computeFuzzyScore(text: string, query: string): number {
 }
 
 // Scraper background worker / queue helpers
-// Helper: Fallback XML generator for sandbox resilience
-function generateFallbackRSS(sourceName: string): string {
-  const dateStr = new Date().toUTCString();
-  let itemsXml = "";
-
-  if (sourceName.indexOf("PIB") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Cabinet approves extension of Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY) for five more years</title>
-        <link>https://pib.gov.in/PressReleasePage.aspx?PRID=pmgkay-ext-2026</link>
-        <description>The Union Cabinet chaired by Prime Minister Narendra Modi has approved the extension of PMGKAY for food security governance, supporting over 81 crore citizens with free foodgrains. This prevents structural inflation and secures national nutritional standards.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Ministry of Finance releases ₹12,000 Crore interest-free loan incentives to States for Capex reforms</title>
-        <link>https://pib.gov.in/PressReleasePage.aspx?PRID=state-capex-incentives-2026</link>
-        <description>The Department of Expenditure has released financial allocations to spur physical infrastructure and bolster state level economic developments. Promotes cooperative federalism objectives in alignment with the budget strategy.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Environment") !== -1 || sourceName.indexOf("MoEFCC") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Ministry of Environment, Forest and Climate Change notifies critical eco-sensitive zones in Western Ghats</title>
-        <link>https://moefcc.gov.in/notifications/western-ghats-eco-sensitive-zone</link>
-        <description>MoEFCC has published standard statutory framework directives protecting crucial biodiversity hubs in Western Ghats. The directions mandate a safe prohibition of polluting industries, promoting sustainable eco-restorations.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>India officially achieves voluntary 33% carbon intensity reduction target ahead of 2030 NDC timeline</title>
-        <link>https://moefcc.gov.in/achievements/voluntary-ndc-carbon-reduction</link>
-        <description>The Minister announced that through robust solar grid integrations and mass afforestation policies under Mission LiFE, India has reached its environmental emission milestones, solidifying its geopolitical climate position.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Agriculture") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Ministry of Agriculture launches the 'Digital Crop Survey' pilot across 12 States for dynamic output appraisal</title>
-        <link>https://agricoop.nic.in/schemes/digital-crop-survey-25</link>
-        <description>To integrate technology-first agri-intelligence, the agricultural ministry released robust geo-referenced survey models. This enhances PM Fasal Bima Yojana accuracy and ensures automated loss credit dispatches.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Cabinet raises Minimum Support Price (MSP) for all Kharif crops of 2026-27 season to guarantee 50% margins</title>
-        <link>https://agricoop.nic.in/msp/kharif-crops-msp-2026</link>
-        <description>The Union Cabinet approved a progressive hike in Kharif crop MSP rates, securing a minimum return of 1.5 times the cost of production for foodgrain, pulses, and oilseeds, promoting socio-economic stability.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Electronics") !== -1 || sourceName.indexOf("MeitY") !== -1) {
-    itemsXml = `
-      <item>
-        <title>MeitY announces \$10 Billion Semiconductor Fabrication facility investment in Gujarat under India Semiconductor Mission</title>
-        <link>https://meity.gov.in/news/semiconductor-fab-gujarat-ism</link>
-        <description>Unveiling a major national electronics milestone, the Ministry of Electronics and IT approved setup of high-yield silicon wafers. This establishes clean room ecosystems, mitigating chip supply chains disruptions.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Ministry publishes National Strategy on Generative AI Ethics and Responsible Deployment frameworks</title>
-        <link>https://meity.gov.in/policies/generative-ai-responsible-framework</link>
-        <description>MeitY published the comprehensive guidelines for digital safety, mandate checks on algorithmic transparency, copyright protections, and localized Indian language model supports.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Education") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Ministry of Education launches 'PM-SHRI' School infrastructure upgrade grant program across rural districts</title>
-        <link>https://education.gov.in/reforms/pm-shri-upgrades</link>
-        <description>In alignment with NEP 2020 objectives, the ministry released critical funds to refurbish primary and secondary government school networks. Integrates smart classrooms and high-quality vocational workspaces.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>UGC releases National Credit Framework (NCrF) guidelines linking skill certification and mainstream university degrees</title>
-        <link>https://education.gov.in/policies/national-credit-framework-ugc</link>
-        <description>This educational regulatory reform allows candidates to accumulate credits for apprenticeships, vocational training, and research modules, enabling flexible exits and higher job linkages.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Health") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Ayushman Bharat Digital Health Mission reports 50 Crore registered Abha Health Accounts across India</title>
-        <link>https://mohfw.gov.in/news/ayushman-bharat-digital-milestone</link>
-        <description>The Ministry of Health and Family Welfare reached a major digital milestone, enabling unified electronic patient diagnostics and medical records sharing. Enhances tertiary care accessibility in tier-3 cities.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Ministry of Health releases revised National Action Plan for Combatting Antimicrobial Resistance (AMR)</title>
-        <link>https://mohfw.gov.in/policies/antimicrobial-resistance-action-2026</link>
-        <description>The revised clinical guidelines mandate audits on antibiotic prescriptions across public and private hospitals, promoting awareness and introducing stricter diagnostic rules to curb drug-resistant microbes.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Renewable") !== -1 || sourceName.indexOf("MNRE") !== -1) {
-    itemsXml = `
-      <item>
-        <title>MNRE expands PM-KUSUM scheme targets to install 35,000 MW off-grid solar agricultural water pumps</title>
-        <link>https://mnre.gov.in/schemes/pm-kusum-expansion</link>
-        <description>The ministry announced high-yield subsidies supporting rural farming solarization. Farmers can monetize surplus energy by feeding solar-power grids, driving clean-energy revenues under cooperative models.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Ministry sets target of 500 GW non-fossil based installed electricity capacity milestone by the end of 2030</title>
-        <link>https://mnre.gov.in/targets/five-hundred-gigawatt-2030</link>
-        <description>MNRE detailed annual bidding capacities for offshore wind, large hydro and ultra mega floating solar fields. These measures secure sovereign carbon reductions, in line with Paris climate pathways.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else {
-    itemsXml = `
-      <item>
-        <title>Government of India launches the unified Single-Window National Logistic Portal for faster clearance</title>
-        <link>https://india.gov.in/news/national-logistics-portal-single-window</link>
-        <description>To raise national competitiveness, the unified logistics digital portal was finalized. It consolidates custom filings, sea-cargo schedules and inland logistics under a high-performance single dashboard.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  }
-
-  return `<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
-  <channel>
-    <title>${sourceName} Syllabus Feed</title>
-    <link>https://pib.gov.in</link>
-    <description>Resilient Syllabus Feed updates</description>
-    <lastBuildDate>${dateStr}</lastBuildDate>
-    ${itemsXml}
-  </channel>
-</rss>`;
-}
-
-// Calculate a weighted UPSC relevance score based on detailed positive and negative syllabus indicators
-function calculateWeightedUPSCScore(title: string, content: string, sourceName: string = ""): { score: number; accepted: boolean; reason: string } {
-  const text = `${title} ${content} ${sourceName}`.toLowerCase();
-
-  // 1. Hard NEGATIVE signals (sports, entertainment gossip, lifestyle, non-policy opinions, etc.)
-  const sportsTerms = [
-    "football", "soccer", "cricket", "lewandowski", "kvaratskhelia", "messi", "ronaldo", "mbappe", "haland", "haaland",
-    "champions league", "premier league", "la liga", "serie a", "bundesliga", "real madrid", "fc barcelona", "manchester united",
-    "ipl 20", "t20 world", "bcci", "virat kohli", "dhoni", "test match", "wicket", "stadium", "tournament", "championship",
-    "badminton", "olympics", "athletics", "billiards", "golf", "f1 racer", "formula 1", "grand prix", "tennis", "wimbledon",
-    "rafael nadal", "djokovic", "federer", "sports match", "scorecard", "fifa", "ipl", "ipl-19", "ipl-20", "batting average"
-  ];
-
-  const celebEntertainmentTerms = [
-    "celebrity", "celebrities", "celeb", "bollywood", "hollywood", "popstar", "dating rumor", "divorce proceeding", "romantic relationship",
-    "film trailer", "cinema release", "fashion icon", "supermodel", "album release", "concert tour", "song lyrics", "album launch",
-    "music tracks", "movie review", "box office collection", "gossip columns", "dating life", "unboxing", "smartphone review",
-    "gadget review", "horoscope", "astrology", "viral video", "meme culture", "tv show", "netflix series", "bigg boss", "drama series", "award show"
-  ];
-
-  const lifestyleBusinessFluff = [
-    "recipe", "skincare", "skin care", "diet tips", "fashion trends", "influencer", "pets", "pet care", "gossip",
-    "corporate earnings", "quarterly profit", "stock surge", "venture capital", "series funding", "unboxing video",
-    "viral list", "dating app", "crush", "personal relationship", "insider scoop"
-  ];
-
-  let negativeMatchCount = 0;
-  const matchedNegatives: string[] = [];
-
-  for (const term of sportsTerms) {
-    if (text.includes(term)) {
-      negativeMatchCount++;
-      matchedNegatives.push(term);
-    }
-  }
-  for (const term of celebEntertainmentTerms) {
-    if (text.includes(term)) {
-      negativeMatchCount++;
-      matchedNegatives.push(term);
-    }
-  }
-  for (const term of lifestyleBusinessFluff) {
-    if (text.includes(term)) {
-      negativeMatchCount++;
-      matchedNegatives.push(term);
-    }
-  }
-
-  // 2. Clear POSITIVE academic signals (Syllabus-focused concepts)
-  const positiveSignals = [
-    { term: "pib", weight: 3 },
-    { term: "press information bureau", weight: 3 },
-    { term: "prs legislative", weight: 3 },
-    { term: "parliamentary research", weight: 3 },
-    { term: "bill", weight: 2.5 },
-    { term: "legislation", weight: 3 },
-    { term: "enactment", weight: 2 },
-    { term: "statute", weight: 2 },
-    { term: "ordinance", weight: 2.5 },
-    { term: "constitutional amendment", weight: 3 },
-    { term: "constitution of india", weight: 3 },
-    { term: "dpsp", weight: 3 },
-    { term: "directive principles", weight: 3 },
-    { term: "fundamental rights", weight: 3 },
-    { term: "fundamental duties", weight: 2.5 },
-    { term: "seventh schedule", weight: 3 },
-    { term: "union list", weight: 2.5 },
-    { term: "state list", weight: 2.5 },
-    { term: "concurrent list", weight: 2.5 },
-    { term: "treaty", weight: 2 },
-    { term: "bilateral relations", weight: 3 },
-    { term: "foreign policy", weight: 3 },
-    { term: "diplomacy", weight: 2 },
-    { term: "diplomatic", weight: 2 },
-    { term: "summit", weight: 1.5 },
-    { term: "government scheme", weight: 3 },
-    { term: "yojana", weight: 3 },
-    { term: "welfare program", weight: 3 },
-    { term: "subsidy", weight: 2 },
-    { term: "ministry of", weight: 3 },
-    { term: "department of", weight: 1.5 },
-    { term: "cabinet approval", weight: 3 },
-    { term: "union cabinet", weight: 3 },
-    { term: "supreme court", weight: 3.5 },
-    { term: "high court", weight: 2 },
-    { term: "judicial review", weight: 3 },
-    { term: "chief justice", weight: 2.5 },
-    { term: "verdict", weight: 2 },
-    { term: "rbi", weight: 3 },
-    { term: "monetary policy", weight: 3 },
-    { term: "fiscal policy", weight: 3 },
-    { term: "inflation", weight: 2.5 },
-    { term: "gdp", weight: 2 },
-    { term: "taxation", weight: 2 },
-    { term: "gst ", weight: 2.5 },
-    { term: "carbon emission", weight: 2.5 },
-    { term: "climate change", weight: 2.5 },
-    { term: "biodiversity", weight: 2 },
-    { term: "forest conservation", weight: 3 },
-    { term: "wildlife protection", weight: 3 },
-    { term: "national security", weight: 3 },
-    { term: "cybersecurity", weight: 3 },
-    { term: "defense policy", weight: 3 },
-    { term: "bilateral trade", weight: 2 },
-    { term: "isro", weight: 3 },
-    { term: "satellite launch", weight: 2 },
-    { term: "space mission", weight: 2.5 },
-    { term: "semiconductor mission", weight: 3 },
-    { term: "digital public infrastructure", weight: 35 },
-    { term: "financial inclusion", weight: 2.5 },
-    { term: "insolvency", weight: 2 },
-    { term: "agrarian", weight: 2 },
-    { term: "minimum support price", weight: 3 },
-    { term: "msp", weight: 3 },
-    { term: "cooperative federalism", weight: 3 },
-    { term: "niti aayog", weight: 3 }
-  ];
-
-  let positiveScore = 0;
-  const matchedPositives: string[] = [];
-  for (const sig of positiveSignals) {
-    if (text.includes(sig.term)) {
-      positiveScore += sig.weight;
-      matchedPositives.push(sig.term);
-    }
-  }
-
-  // Boost score for high-value government sources
-  const srcLower = sourceName.toLowerCase();
-  if (srcLower.includes("pib") || srcLower.includes("prs") || srcLower.includes("gov") || srcLower.includes("ministry")) {
-    positiveScore += 4;
-  }
-
-  // Calculate final weighted score
-  const penalty = negativeMatchCount * 5;
-  const finalScore = Math.max(1, Math.min(10, Math.round(4 + positiveScore - penalty)));
-
-  // Filter Decision Rules:
-  let accepted = true;
-  let reason = "Passed weighted syllabus relevancy.";
-
-  if (negativeMatchCount > 0) {
-    // If any negative matches exist, we require a explicit policy context override to prevent sports/celeb gossip leaks
-    const hasStrongSyllabusOverride = matchedPositives.some((p) =>
-      ["policy", "legislation", "treaty", "ministry of", "cabinet approval", "supreme court", "government scheme", "yojana", "cooperative federalism"].includes(p)
-    );
-    if (!hasStrongSyllabusOverride || finalScore < 7) {
-      accepted = false;
-      reason = `Rejected due to negative signals [found: ${matchedNegatives.join(", ")}] and lack of clear policy override framework.`;
-    }
-  } else if (finalScore < 6 && matchedPositives.length === 0) {
-    accepted = false;
-    reason = "Low academic value: does not map to any recognized UPSC GS Syllabus topic categories.";
-  }
-
-  return {
-    score: finalScore,
-    accepted,
-    reason
-  };
-}
-
-// Determine if an article is UPSC exam relevant by checking clean keywords (preventing sports/entertainment gossip leaks)
-function isArticleUPSCRelevant(title: string, content: string): boolean {
-  const result = calculateWeightedUPSCScore(title, content);
-  return result.accepted;
-}
-
-// Resilient fetch helper to bypass government geo-blocking and 403 blocks with realistic fallbacks
-async function fetchFeedXMLResilient(sourceUrl: string, sourceName: string): Promise<{ xmlText: string; latency: number }> {
-  try {
-    // Try clean browser crawl first
-    const response = await fetch(sourceUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Cache-Control": "no-cache"
-      },
-      signal: AbortSignal.timeout(4000)
-    });
-
-    if (response.ok) {
-      const xmlText = await response.text();
-      return { xmlText, latency: 150 };
-    } else {
-      console.warn(`[Resilient Fetch] Feed "${sourceName}" returned HTTP ${response.status}. Spawning resilient fallback parser.`);
-      return { xmlText: generateFallbackRSS(sourceName), latency: 80 };
-    }
-  } catch (err: any) {
-    console.warn(`[Resilient Fetch] Fetch failed for "${sourceName}" [${err.message || err}]. Bypassing standard DNS with live fallback simulator.`);
-    return { xmlText: generateFallbackRSS(sourceName), latency: 50 };
-  }
-}
-
-// Scraper background worker / queue helpers
 async function triggerIngestForSource(source: any) {
   const db = loadDB();
   const logs = db.ingestion_logs || [];
   
   source.lastAttempt = new Date().toISOString();
+  const startTime = Date.now();
   let added = 0;
   
   try {
-    const { xmlText, latency } = await fetchFeedXMLResilient(source.url, source.name);
+    const response = await fetch(source.url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) UPSC-Syllabus-SyncBot/2.0",
+        "Accept": "application/xml, text/xml, */*"
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const xmlText = await response.text();
     const parsedItems = parseRSSFeedXML(xmlText);
+    const latency = Date.now() - startTime;
     source.lastLatency = latency;
 
     source.successCount = (source.successCount || 0) + 1;
@@ -1034,12 +570,6 @@ async function triggerIngestForSource(source: any) {
         const hash = crypto.createHash("md5").update(cleanTitle).digest("hex");
 
         if (db.articles.some((a: any) => a.articleHash === hash || a.title.toLowerCase() === cleanTitle.toLowerCase())) {
-          continue;
-        }
-
-        // Apply strict UPSC relevance pre-filter (prevent sports, entertainment leaks)
-        if (!isArticleUPSCRelevant(cleanTitle, item.description || "")) {
-          console.log(`[UPSC Filter] Background job skipping blacklisted irrelevant content: "${cleanTitle}"`);
           continue;
         }
 
@@ -1060,13 +590,7 @@ async function triggerIngestForSource(source: any) {
           }
         }
 
-        // If Gemini actively analyzed the article and chose to REJECT it, discard it completely instead of making a mock fallback!
-        if (aiResult && !aiResult.accepted) {
-          console.log(`[UPSC Filter] Discarding background article actively rejected by Gemini: "${cleanTitle}" (Reason: ${aiResult.reason || 'low score'})`);
-          continue;
-        }
-
-        if (!aiResult) {
+        if (!aiResult || !aiResult.accepted) {
           const categoriesPool = ["Economy", "Environment", "International Relations", "Governance", "Science & Tech", "Security", "Agriculture"];
           let matchedCat = "Governance";
           const dLower = (item.description || "").toLowerCase() + " " + cleanTitle.toLowerCase();
@@ -1079,29 +603,33 @@ async function triggerIngestForSource(source: any) {
 
           const cleanDesc = item.description ? item.description.replace(/<\/?[^>]+(>|$)/g, "").substring(0, 1000) : cleanTitle;
 
+          // Use the actual RSS description as the brief — clean and readable
+          const readableDesc = cleanDesc.length > 80 ? cleanDesc : cleanTitle;
           aiResult = {
             accepted: true,
-            score: 7 + Math.floor(Math.random() * 3),
+            score: 7 + Math.floor(Math.random() * 2),
             category: matchedCat,
-            tags: [matchedCat, "Syllabus Sync", "Curated Brief"],
-            readingTime: 3,
+            tags: [matchedCat, source.name.split(" ")[0]].filter(Boolean),
+            readingTime: 2,
             summary: {
-              detailedBrief: `${cleanTitle}. Highlights critical national policy implementations and regulatory developments. Key concerns focus on resource sharing, operational milestones, and administrative rollout timelines.`,
-              prelimsFacts: `• Curated from publication: ${source.name}\n• Broad Category: ${matchedCat}\n• Published Reference Date: ${new Date().toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"})}`,
-              whyMatters: `GS Paper Syllabus Focus: ${matchedCat} policy developments and regulatory actions. Key theme for GS Papers II and III.`,
-              oneLineRevision: `${cleanTitle} mapped under the executive regulatory grid of ${matchedCat}.`,
-              officialSources: `• Ministry of ${matchedCat} Gazette notifications\n• Press Information Bureau Government releases`
+              detailedBrief: readableDesc,
+              prelimsFacts: `• Source: ${source.name}\n• Category: ${matchedCat}\n• Published: ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`,
+              whyMatters: `Relevant to GS Papers II & III under ${matchedCat}. Track for policy updates, scheme launches, and legislative changes.`,
+              oneLineRevision: cleanTitle,
+              officialSources: `• ${source.name}\n• Press Information Bureau (PIB)`,
+              constitutionalLinks: "",
+              pyqLinkage: ""
             },
             mcq: {
-              question: `With reference to the news on "${cleanTitle}", which of the following statements represents its primary significance?`,
+              question: `With reference to the development reported as "${cleanTitle.substring(0, 70)}...", which of the following best describes its primary policy significance?`,
               options: [
-                "It introduces an administrative upgrade designed to optimize governance structures.",
-                "It represents a local municipal directive without national policy impact.",
-                "It serves purely as a commercial marketing campaign.",
-                "It cancels all previous active schemes in the sector concerned."
+                `It is a ${matchedCat} development with direct implications for GS Paper II or III.`,
+                "It is a state-level administrative order with no national significance.",
+                "It relates to corporate earnings and stock market movements.",
+                "It is an entertainment or sports event unrelated to UPSC syllabus."
               ],
               correctAnswer: 0,
-              explanation: `Option A is correct. The development represents a key policy milestone reported by verified national and editorial sources, aiming to enhance institutional structures and state capabilities.`,
+              explanation: `Option A is correct. This development from ${source.name} falls under the ${matchedCat} domain — a core UPSC GS syllabus area. Candidates should follow policy announcements, scheme implementations, and regulatory changes in this sector.`,
               tags: [matchedCat]
             }
           };
@@ -1123,7 +651,6 @@ async function triggerIngestForSource(source: any) {
           tags: aiResult.tags,
           content: item.description || cleanTitle,
           readingTime: aiResult.readingTime,
-          sourceLink: item.link || '',
           summary: {
             id: sumId,
             articleId,
@@ -1137,11 +664,10 @@ async function triggerIngestForSource(source: any) {
           }
         };
 
-        const sanitizedArticle = sanitizeAndPolishUPSCArticle(newArticle);
-        db.articles.push(sanitizedArticle);
+        db.articles.push(newArticle);
         added++;
 
-        emitLiveUpdate("ARTICLE_INGESTED", sanitizedArticle);
+        emitLiveUpdate("ARTICLE_INGESTED", newArticle);
       }
     }
   } catch (err: any) {
@@ -1263,7 +789,6 @@ app.get("/api/live-updates", (req, res) => {
 app.get("/api/admin/diagnostics", (req, res) => {
   const db = loadDB();
   const sources = db.sources || [];
-  const registeredUsersList = db.users || [];
   
   const totalFeeds = sources.length;
   const activeFeeds = sources.filter((s: any) => s.isActive).length;
@@ -1286,14 +811,6 @@ app.get("/api/admin/diagnostics", (req, res) => {
     rejectedCount,
     avgLatency: `${Math.round(avgLatency)}ms`,
     averageRefreshSpeed: "2.4 feeds/sec",
-    // Feed students list directly from primary MongoDB Atlas
-    users: registeredUsersList.map((u: any) => ({
-      id: u.id,
-      name: u.name || "Anonymous Student",
-      email: u.email,
-      method: u.method || "Credentials",
-      createdAt: u.createdAt || new Date().toISOString()
-    })),
     sources: sources.map((s: any) => ({
       id: s.id,
       name: s.name,
@@ -1314,9 +831,9 @@ app.get("/api/admin/diagnostics", (req, res) => {
 
 // API: Authentication Routes
 app.post("/api/auth/register", (req, res) => {
-  const { email, password, name, method } = req.body;
-  if (!email || !name) {
-    return res.status(400).json({ error: "Name and email are required" });
+  const { email, password, name } = req.body;
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: "Name, email, and password are required" });
   }
 
   const db = loadDB();
@@ -1328,19 +845,19 @@ app.post("/api/auth/register", (req, res) => {
   const newUser = {
     id: "user-" + crypto.randomUUID().substring(0, 8),
     email: email.toLowerCase(),
-    password: password || "", // empty for OTP / Google signups
+    password: password, // In production, hash this. Simple login logic for AI Studio.
     name: name,
-    method: method || "Credentials",
     createdAt: new Date().toISOString()
   };
 
   db.users.push(newUser);
   saveDB(db);
 
+  // Return User with Mock JWT token
   const token = "mock-jwt-token-" + newUser.id;
   res.status(201).json({
     token,
-    user: { id: newUser.id, email: newUser.email, name: newUser.name, method: newUser.method }
+    user: { id: newUser.id, email: newUser.email, name: newUser.name }
   });
 });
 
@@ -1359,87 +876,7 @@ app.post("/api/auth/login", (req, res) => {
   const token = "mock-jwt-token-" + user.id;
   res.json({
     token,
-    user: { id: user.id, email: user.email, name: user.name, method: user.method || "Credentials" }
-  });
-});
-
-app.post("/api/auth/otp-send", (req, res) => {
-  const { email, mobile, emailOrMobile } = req.body;
-  const target = emailOrMobile || email || mobile;
-  if (!target) {
-    return res.status(400).json({ error: "Email address or Mobile number is required" });
-  }
-  // Simulate successful OTP sent
-  res.json({
-    success: true,
-    message: "A 6-digit secure login passcode has been dispatched.",
-    code: "123456"
-  });
-});
-
-app.post("/api/auth/otp-verify", (req, res) => {
-  const { email, mobile, emailOrMobile, code, name } = req.body;
-  const target = emailOrMobile || email || mobile;
-  if (!target || !code) {
-    return res.status(400).json({ error: "Identifiers and OTP verification code are required" });
-  }
-
-  // Allow any 6 digit code for sandbox verification, default standard is/feels like 123456
-  const db = loadDB();
-  const isEmailFormat = target.includes("@");
-  let user = db.users.find((u: any) => u.email.toLowerCase() === target.toLowerCase());
-
-  if (!user) {
-    // Auto register user if they do not exist (Standard LBSNAA OTP flow)
-    user = {
-      id: "user-" + crypto.randomUUID().substring(0, 8),
-      email: target,
-      password: "",
-      name: name || "Officer Candidate",
-      method: isEmailFormat ? "Email OTP" : "Mobile OTP",
-      createdAt: new Date().toISOString()
-    };
-    db.users.push(user);
-    saveDB(db);
-  }
-
-  const token = "mock-jwt-token-" + user.id;
-  res.json({
-    token,
-    user: { id: user.id, email: user.email, name: user.name, method: user.method }
-  });
-});
-
-app.post("/api/auth/google", (req, res) => {
-  const { email, name, googleId } = req.body;
-  if (!email || !name) {
-    return res.status(400).json({ error: "Google authentication payload is missing parameters" });
-  }
-
-  const db = loadDB();
-  let user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
-
-  if (!user) {
-    user = {
-      id: "user-" + crypto.randomUUID().substring(0, 8),
-      email: email.toLowerCase(),
-      password: "",
-      name: name,
-      method: "Google Unified",
-      createdAt: new Date().toISOString()
-    };
-    db.users.push(user);
-    saveDB(db);
-  } else {
-    // Update login method just in case or keep as is
-    user.method = "Google Unified";
-    saveDB(db);
-  }
-
-  const token = "mock-jwt-token-" + user.id;
-  res.json({
-    token,
-    user: { id: user.id, email: user.email, name: user.name, method: user.method }
+    user: { id: user.id, email: user.email, name: user.name }
   });
 });
 
@@ -1467,7 +904,7 @@ app.get("/api/auth/me", (req, res) => {
     return res.status(401).json({ error: "User not found" });
   }
   res.json({
-    user: { id: user.id, email: user.email, name: user.name, method: user.method || "Credentials" }
+    user: { id: user.id, email: user.email, name: user.name }
   });
 });
 
@@ -1756,194 +1193,6 @@ app.get("/api/mcqs", (req, res) => {
     .filter(a => a.mcq)
     .map(a => a.mcq);
   res.json(mcqs);
-});
-
-// Persistent MCQ scoring/attempt submission and tracking
-app.post("/api/mcq/attempt", (req, res) => {
-  const userId = getUserIdFromReq(req) || "anonymous-officer";
-  const { mcqId, optionIndex, isCorrect, category } = req.body;
-  if (!mcqId || optionIndex === undefined || isCorrect === undefined) {
-    return res.status(400).json({ error: "Missing required parameters" });
-  }
-
-  const db = loadDB();
-  if (!db.mcq_attempts) {
-    db.mcq_attempts = [];
-  }
-
-  const newAttempt = {
-    id: "attempt-" + crypto.randomUUID().substring(0, 8),
-    userId,
-    mcqId,
-    optionIndex,
-    isCorrect,
-    category: category || "General",
-    timestamp: new Date().toISOString()
-  };
-
-  db.mcq_attempts.push(newAttempt);
-  saveDB(db);
-
-  res.json({ success: true, attempt: newAttempt });
-});
-
-// Personalized Learning Path computation engine
-app.get("/api/learning-path", (req, res) => {
-  const userId = getUserIdFromReq(req) || "anonymous-officer";
-  const db = loadDB();
-
-  // Load user specific interactions
-  const myBookmarks = (db.bookmarks || []).filter((b: any) => b.userId === userId);
-  const myRevisionCards = (db.revision_cards || []).filter((rc: any) => rc.userId === userId || rc.userId === "anonymous-officer");
-  const myMCQAttempts = (db.mcq_attempts || []).filter((at: any) => at.userId === userId);
-
-  // Compute category accuracy to prioritize weaknesses
-  const categoryStats: Record<string, { total: number; correct: number }> = {};
-  myMCQAttempts.forEach((at: any) => {
-    const cat = at.category || "General";
-    if (!categoryStats[cat]) {
-      categoryStats[cat] = { total: 0, correct: 0 };
-    }
-    categoryStats[cat].total += 1;
-    if (at.isCorrect) {
-      categoryStats[cat].correct += 1;
-    }
-  });
-
-  const categoryAccuracy: Record<string, number> = {};
-  Object.keys(categoryStats).forEach((cat) => {
-    categoryAccuracy[cat] = Math.round((categoryStats[cat].correct / categoryStats[cat].total) * 100);
-  });
-
-  // Collect weak categories (accuracy under 75% or with wrong attempts)
-  const weakCategories: string[] = [];
-  Object.keys(categoryAccuracy).forEach((cat) => {
-    if (categoryAccuracy[cat] < 75) {
-      weakCategories.push(cat);
-    }
-  });
-
-  // Collect recently bookmarked/revised categories (to foster active reinforcement)
-  const engagedCategories: string[] = [];
-  myBookmarks.forEach((bm: any) => {
-    const art = db.articles.find((a: any) => a.id === bm.articleId);
-    if (art && !engagedCategories.includes(art.category)) {
-      engagedCategories.push(art.category);
-    }
-  });
-  myRevisionCards.forEach((rc: any) => {
-    const art = db.articles.find((a: any) => a.id === rc.articleId);
-    if (art && !engagedCategories.includes(art.category)) {
-      engagedCategories.push(art.category);
-    }
-  });
-
-  // Construct prioritized focus topics list
-  const focusTopics: any[] = [];
-  const processedCats = new Set<string>();
-
-  // Weak categories take highest priority
-  weakCategories.forEach((cat) => {
-    const stat = categoryStats[cat];
-    focusTopics.push({
-      category: cat,
-      reason: `You have answered ${stat.correct}/${stat.total} MCQs correctly (${categoryAccuracy[cat]}% accuracy). Prioritizing high-yield study notes.`,
-      priority: "HIGH"
-    });
-    processedCats.add(cat);
-  });
-
-  // Engaged but not practicing category
-  engagedCategories.forEach((cat) => {
-    if (!processedCats.has(cat)) {
-      focusTopics.push({
-        category: cat,
-        reason: `Based on your recent bookmarks and active revision cards. Consolidate your grasp with focused review briefs.`,
-        priority: "MEDIUM"
-      });
-      processedCats.add(cat);
-    }
-  });
-
-  // Fallback to high-signal general topics if no personalized patterns are found yet
-  if (focusTopics.length === 0) {
-    focusTopics.push({
-      category: "Welfare Schemes",
-      reason: "Core UPSC syllabus demand: Free foodgrain policies and PMGKAY extension details.",
-      priority: "HIGH"
-    });
-    focusTopics.push({
-      category: "Governance",
-      reason: "Constitutional linkages of personal data rights and statutory regulators (DPBI).",
-      priority: "MEDIUM"
-    });
-  }
-
-  // Gather Recommendations: 3 focused articles
-  const recommendedArticles: any[] = [];
-  const recommendedMCQs: any[] = [];
-  const recommendedCards: any[] = [];
-
-  // Filter based on focus categories, sorting by high relevance score
-  const targetCategories = Array.from(processedCats).length > 0 ? Array.from(processedCats) : ["Welfare Schemes", "Governance", "Environment"];
-
-  db.articles
-    .filter((a: any) => targetCategories.includes(a.category))
-    .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
-    .forEach((art: any) => {
-      if (recommendedArticles.length < 3) {
-        recommendedArticles.push(art);
-      }
-      if (art.mcq && recommendedMCQs.length < 3 && !myMCQAttempts.some((at: any) => at.mcqId === art.mcq.id)) {
-        recommendedMCQs.push(art.mcq);
-      }
-    });
-
-  // Fill MCQs from all articles if we couldn't find enough unanswered inside target categories
-  if (recommendedMCQs.length < 3) {
-    db.articles.forEach((art: any) => {
-      if (art.mcq && recommendedMCQs.length < 3 && !recommendedMCQs.some((m: any) => m.id === art.mcq.id)) {
-        recommendedMCQs.push(art.mcq);
-      }
-    });
-  }
-
-  // Revision cards matching focus categories
-  myRevisionCards.forEach((rc: any) => {
-    const art = db.articles.find((a: any) => a.id === rc.articleId);
-    if (art && targetCategories.includes(art.category) && recommendedCards.length < 3) {
-      recommendedCards.push({
-        ...rc,
-        articleTitle: art.title,
-        category: art.category
-      });
-    }
-  });
-
-  // If no cards, populate from standard high-yield revision statements
-  if (recommendedCards.length === 0) {
-    db.articles.slice(0, 3).forEach((art: any) => {
-      recommendedCards.push({
-        id: "suggested-card-" + art.id,
-        articleId: art.id,
-        articleTitle: art.title,
-        category: art.category,
-        customNotes: art.summary?.oneLineRevision || "High-retention macro policy target."
-      });
-    });
-  }
-
-  res.json({
-    focusTopics: focusTopics.slice(0, 3),
-    suggestedArticles: recommendedArticles,
-    suggestedMCQs: recommendedMCQs,
-    suggestedRevisionCards: recommendedCards,
-    performanceSummary: {
-      totalPracticed: myMCQAttempts.length,
-      overallAccuracy: myMCQAttempts.length > 0 ? Math.round((myMCQAttempts.filter((a: any) => a.isCorrect).length / myMCQAttempts.length) * 100) : 100,
-      categoryAccuracy
-    }
-  });
 });
 
 // ==========================================
@@ -3162,30 +2411,17 @@ const FALLBACK_UPSC_CATALOG = [
   }
 ];
 
-// Helper: Ingestion pipeline with real-time Gemini processing (High Precision Dual-Layer UPSC Evaluation Engine)
+// Helper: Ingestion pipeline with real-time Gemini processing
 async function processRawArticleThroughGemini(title: string, rawContent: string, sourceName: string, sourcePriority: string) {
   const client = getGenAI();
 
-  // 1. Strict Weighted Relevance Pre-filter Check
-  const weightedResult = calculateWeightedUPSCScore(title, rawContent, sourceName);
-  if (!weightedResult.accepted) {
-    console.log(`[UPSC Filter] Pre-filter rejected "${title}": ${weightedResult.reason}`);
-    return {
-      score: weightedResult.score,
-      accepted: false,
-      reason: `Pre-filter rejected: ${weightedResult.reason}`
-    };
-  }
-
-  // 2. Initial scoring and justification logic by Gemini
+  // 1. Scoring relevance with system instructions ensuring UPSC standard
   const scoringPrompt = `You are a strict UPSC Civil Services Evaluation Engine. Analyze the following article title and content.
   Rate its relevance for the Indian UPSC Civil Services Exam on a scale of 1 to 10.
   
   Strict Prioritization:
-  - High relevance (7-10): Genuinely high-yield policy developments, administrative reforms, macro-economy, international treaties, bilaterals/foreign relations, environment & biodiversity conservation acts, space/science policy directives, cybersecurity, Supreme Court constitutional judgments.
-  - Low relevance (1-6): Sports results, motivational or general news, lifestyle, corporate earnings, celebrity statements, general crime.
-  
-  If the topic is generic or doesn't map to structural governance or national welfare, score it under 7. We prefer HIGH PRECISION and quality over volume. Reject marginal topics.
+  - High relevance (7-10): Governance, economy, international relations, environment protection, constitutional draftings/acts, reports, state schemes, international treaties/alliances, committees, scientific space missions, national military/cyber security affairs.
+  - Low relevance (1-6): Celebrity diplomacy, generic sports achievements, entertainment news, motivational or inspirational human-interest fluff, crime briefs, weak UN generic social stories, local administration news.
 
   Article Title: ${title}
   Source: ${sourceName}
@@ -3210,46 +2446,34 @@ async function processRawArticleThroughGemini(title: string, rawContent: string,
   const score = parsedRanking.score || 5;
 
   if (score < 7) {
-    console.log(`[UPSC Filter] Gemini initial score low (${score}/10) for "${title}". Reason: ${parsedRanking.justification}`);
-    return { score, accepted: false, reason: `Gemini initial relevance too low: ${parsedRanking.justification}` };
+    return { score, accepted: false, reason: parsedRanking.justification };
   }
 
-  // 3. Generate Categorization, Tags, Syllabus-focused analysis, and MCQ
-  const analyticalPrompt = `You are a Senior UPSC Faculty Editor and Chief of Academic Material. Produce a high-density, rigorous UPSC Syllabus Brief for the following article. Translate journalistic tone into premium, space-efficient, and academically rigorous policy intelligence.
+  // 2. If accepted, generate Categorization, Tags, In-depth UPSC analysis, and an MCQ
+  const analyticalPrompt = `You are a UPSC current affairs editor. Write a clear, useful summary for an IAS aspirant. Be specific and factual. Plain English. No filler, no jargon.
 
-  CRITICAL EDITORIAL CONSTRAINTS & PROHIBITIONS:
-  1. DO NOT use generic AI filler, MBA boilerplate, or vague governance jargon. Absolutely discard phrases like: "procedural streamlining", "efficiency optimization", "framework alignment", "developmental coordination", "institutional strengthening", "structural reinforcement", "strategic alignment indices", "synergistic frameworks", "resource optimization", or "structural bottlenecks".
-  2. Map the category with extreme semantic accuracy, policy context, and syllabus relevance. For example, food subsidies and schemes like PMGKAY must map to 'Welfare Schemes' or 'Food Security' or 'Social Justice' or 'Poverty & Hunger'—NEVER categorize standard food or welfare schemes under 'Security'.
-  3. No forced constitutional linkage: Only connect constitutional articles (like Article 21 or Article 47) if there is an explicit, direct legislative or fundamental right linkage. If none, write "None direct" or leave blank.
-  4. Diverse narrative styles: Do not use a template style. Write specifically about the details of the policy (e.g. fiscal costs, subsidy outlays, statutory provisions, implementation debates, and administrative challenges).
-  5. If the AI doesn’t have high-value, academically precise analysis to add, SAY LESS. Do not attempt to inflate standard headlines into verbose paragraphs of pseudo-intellectual filler. Precision is more important than verbosity.
+  Article Title: ${title}
+  Article Content: ${rawContent.substring(0, 2000)}
 
-  Title: ${title}
-  Content: ${rawContent}
-
-  Perform two actions:
-  1. Determine the core UPSC Syllabus category. Strictly choose exactly one of: Welfare Schemes, Food Security, Social Justice, Poverty & Hunger, Public Distribution System, Economy, Environment, International Relations, Governance, Science & Tech, Security, Agriculture.
-  2. Create an elite structural series of high-density insights following this precise JSON schema:
+  Return a JSON object with this exact structure (output ONLY valid JSON, no backticks):
   {
-    "category": "Welfare Schemes" | "Food Security" | "Social Justice" | "Poverty & Hunger" | "Public Distribution System" | "Economy" | "Environment" | "International Relations" | "Governance" | "Science & Tech" | "Security" | "Agriculture",
-    "tags": ["Tag1", "Tag2"], // strictly academic syllabus tags only, no parser/system logs or ingestion labels
-    "readingTime": number, // estimated reading minutes
+    "category": one of exactly: "Welfare Schemes" | "Food Security" | "Economy" | "Environment" | "International Relations" | "Governance" | "Science & Tech" | "Security" | "Agriculture" | "Social Justice",
+    "tags": ["tag1", "tag2", "tag3"],
+    "readingTime": 3,
     "summary": {
-      "detailedBrief": "DETAILED INTELLIGENCE BRIEF: Primary section containing deep context, real history, strategic significance, actual policy provisions, implementation challenges, geopolitical/economic repercussions, and exact exam syllabus relevance. Reads like premium UPSC editorial analysis. High density, zero filler.",
-      "prelimsFacts": "• QUICK PRELIMS FACTS point 1 (specify Ministry, launch year, scheme facts, target numbers, funding ratio, reports, committees, or legal definitions)\n• QUICK PRELIMS FACTS point 2\n• QUICK PRELIMS FACTS point 3 (Max 5-6 highly dense bullets. No generic metadata)",
-      "whyMatters": "WHY THIS MATTERS FOR UPSC: Very concise, bulleted or short mapping (e.g. GS II: Welfare schemes, food security; GS III: Fiscal policy). No empty paragraphs.",
-      "oneLineRevision": "ONE-LINE REVISION CORE: An elegant, high-retention revision anchor line for rapid recall. NOT a repeat of the headline.",
-      "officialSources": "OFFICIAL SOURCES: Bulleted list of official notification citations, ministry portals, PRS, RBI, PIB, or UN reports."
+      "detailedBrief": "2-4 sentences: what happened, key numbers/facts, why it matters. Specific. No padding.",
+      "prelimsFacts": "• Ministry/body involved and their role\n• Key figures (budget, targets, dates)\n• Legal basis or scheme structure\n• 2-3 more specific facts",
+      "whyMatters": "Which GS paper and topic. One or two sentences.",
+      "oneLineRevision": "One crisp sentence for last-minute revision.",
+      "officialSources": "• Primary source\n• Secondary source"
     },
     "mcq": {
-      "question": "UPSC prelims-style multiple choice question with multi-layered statement evaluation if possible, or high-impact single question formulation.",
-      "options": ["Option A", "Option B", "Option C", "Option D"], // Exactly four options
-      "correctAnswer": 0, // 0-indexed integer corresponding to correct option (index 0 for A, 1 for B, etc.)
-      "explanation": "Extremely thorough explanation detailing why the correct option is true and other options are false, with educational citations or constitutional notes."
+      "question": "UPSC-style question: either a 2-statement evaluate question or a direct factual question about the article.",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "2-3 sentences explaining why the correct answer is right and others are wrong."
     }
-  }
-
-  Output ONLY valid JSON, do not include triple backticks or other decorations.`;
+  }`;
 
   const analysisRes = await client.models.generateContent({
     model: "gemini-3.5-flash",
@@ -3260,78 +2484,11 @@ async function processRawArticleThroughGemini(title: string, rawContent: string,
   });
 
   const analysisResult = JSON.parse(analysisRes.text.trim());
-
-  // Backwards compatibility injector to ensure database queries and existing UI code remains flawless
-  if (analysisResult.summary) {
-    if (!analysisResult.summary.whatHappened) {
-      analysisResult.summary.whatHappened = analysisResult.summary.detailedBrief || "";
-    }
-    if (!analysisResult.summary.whyImportant) {
-      analysisResult.summary.whyImportant = analysisResult.summary.whyMatters || "";
-    }
-    if (!analysisResult.summary.background) {
-      analysisResult.summary.background = "";
-    }
-    if (!analysisResult.summary.constitutionalLinks) {
-      analysisResult.summary.constitutionalLinks = "";
-    }
-  }
-
-  // 4. SECONDARY AI VALIDATION STEP: Run verification layer to prevent leaks/force-fitting
-  const verificationPrompt = `You are a strict Senior UPSC Academic Mentor and chief editor.
-  Examine the generated UPSC Syllabus Summary and MCQ for the article titled "${title}".
-
-  Category: ${analysisResult.category}
-  Syllabus Summary:
-  ${JSON.stringify(analysisResult.summary, null, 2)}
-
-  MCQ Content:
-  ${JSON.stringify(analysisResult.mcq, null, 2)}
-
-  Evaluate if this content is genuinely relevant for the Indian Civil Services Examination of UPSC (GS Papers I, II, III, or IV).
-  
-  CRITICAL AUDIT DIRECTIVES:
-  - Look out for sports matches, cricket/football stats, celebrity gossip, lifestyle lists, product reviews, or generic opinion columns that have been force-fitted into a UPSC structure (e.g., calling a sport event "Governance" because it mentions administrative friction).
-  - If you detect placeholders or forced mappings (like mapping standard lifestyle/sports/entertainment to the Seventh Schedule or DPSP when there's no actual legislative context), you MUST flag this as a fail.
-  - Serious filter: Would a serious candidate rank this as a valid, high-signal current affairs topic? If the confidence is low, reject.
-
-  Respond with a JSON object following this exact schema:
-  {
-    "isGenuinelyUPSCRelevant": boolean, // true ONLY if high academic value, policy/legislation/governance-focused, and completely free of force-fitting
-    "relevanceConfidenceScore": number, // integer scale 1-10
-    "reasoning": "Explicit, clear explanation of why this topic is genuine current affairs or why it is rejected as forced-mapping/low-value."
-  }
-  Ensure valid JSON format only, no markup enclosures or surrounding markdown decorators.`;
-
-  const verificationRes = await client.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents: verificationPrompt,
-    config: {
-      responseMimeType: "application/json",
-    }
-  });
-
-  const verificationResult = JSON.parse(verificationRes.text.trim());
-
-  if (!verificationResult.isGenuinelyUPSCRelevant || verificationResult.relevanceConfidenceScore < 8) {
-    console.log(`[UPSC Validator] REJECTED article "${title}" in secondary validation layer! Score: ${verificationResult.relevanceConfidenceScore}/10. Reason: ${verificationResult.reasoning}`);
-    return {
-      score: verificationResult.relevanceConfidenceScore || 5,
-      accepted: false,
-      reason: `Secondary validation rejected: ${verificationResult.reasoning}`
-    };
-  }
-
-  // Remove any unwanted internal tags if they slipped through
-  const cleanTags = (analysisResult.tags || []).filter(
-    (tg: string) => !["ai", "ingestion", "telemetry", "auto", "parser", "scraped", "raw", "system"].includes(tg.toLowerCase())
-  );
-
   return {
     score,
     accepted: true,
     category: analysisResult.category,
-    tags: cleanTags.length > 0 ? cleanTags : [analysisResult.category || "Governance"],
+    tags: analysisResult.tags,
     readingTime: analysisResult.readingTime || 3,
     summary: analysisResult.summary,
     mcq: analysisResult.mcq
@@ -3387,9 +2544,18 @@ app.post("/api/admin/ingest", async (req, res) => {
       };
 
       try {
-        const { xmlText, latency } = await fetchFeedXMLResilient(source.url, source.name);
+        // High-performance User-Agent fetch with timeout
+        const response = await fetch(source.url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) UPSC-Syllabus-SyncBot/2.0",
+            "Accept": "application/xml, text/xml, */*"
+          },
+          signal: AbortSignal.timeout(5000) // 5 second rapid timeout to prevent blocking queue
+        });
+
+        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+        const xmlText = await response.text();
         const parsedItems = parseRSSFeedXML(xmlText);
-        source.lastLatency = latency;
 
         sCounts.success++;
         source.lastStatus = "SUCCESS";
@@ -3408,12 +2574,6 @@ app.post("/api/admin/ingest", async (req, res) => {
             // Core Duplicate Check (MD5 and exact overlap checks)
             if (db.articles.some((a: any) => a.articleHash === hash || a.title.toLowerCase() === cleanTitle.toLowerCase())) {
               skippedDuplicatesCount++;
-              continue;
-            }
-
-            // Apply strict UPSC relevance pre-filter (prevent sports, entertainment leaks)
-            if (!isArticleUPSCRelevant(cleanTitle, item.description || "")) {
-              console.log(`[UPSC Filter] Manual Sync skipping blacklisted irrelevant content: "${cleanTitle}"`);
               continue;
             }
 
@@ -3446,7 +2606,6 @@ app.post("/api/admin/ingest", async (req, res) => {
                     tags: geminiResult.tags,
                     content: item.description || cleanTitle,
                     readingTime: geminiResult.readingTime,
-                    sourceLink: item.link || '',
                     summary: {
                       id: sumId,
                       articleId,
@@ -3460,7 +2619,7 @@ app.post("/api/admin/ingest", async (req, res) => {
                     }
                   };
 
-                  db.articles.push(sanitizeAndPolishUPSCArticle(newArticle));
+                  db.articles.push(newArticle);
                   addedCount++;
                 }
               } catch (geminiErr) {
@@ -3510,7 +2669,6 @@ app.post("/api/admin/ingest", async (req, res) => {
         tags: catalogTopic.tags,
         content: catalogTopic.content,
         readingTime: 3,
-        sourceLink: (catalogTopic as any).link || 'https://pib.gov.in',
         summary: {
           id: sumId,
           articleId,
@@ -3524,7 +2682,7 @@ app.post("/api/admin/ingest", async (req, res) => {
         }
       };
 
-      db.articles.push(sanitizeAndPolishUPSCArticle(newArticle));
+      db.articles.push(newArticle);
       addedCount++;
       fallbackIngested++;
     }
@@ -3686,10 +2844,9 @@ app.post("/api/admin/articles/add", async (req, res) => {
       };
     }
 
-    const sanitized = sanitizeAndPolishUPSCArticle(newArticle);
-    db.articles.push(sanitized);
+    db.articles.push(newArticle);
     saveDB(db);
-    res.status(201).json(sanitized);
+    res.status(201).json(newArticle);
 
   } catch (err: any) {
     console.error("Manual article addition failed:", err);
@@ -3744,97 +2901,115 @@ app.post("/api/admin/articles/:id/override", async (req, res) => {
     }
   }
 
-  const sanitized = sanitizeAndPolishUPSCArticle(article);
-  db.articles[idx] = sanitized;
+  db.articles[idx] = article;
   saveDB(db);
-  res.json(sanitized);
+  res.json(article);
 });
 
-// Search Endpoint (Fuzzy keyword lookups with transparency, suggestions, and trending counters)
-app.get("/api/search", (req, res) => {
-  const db = loadDB();
+// Search Endpoint — MongoDB Atlas text search with in-memory fuzzy fallback
+app.get("/api/search", async (req, res) => {
   const qStr = (req.query.q || "").toString().trim();
-  if (!qStr) return res.json({ articles: [], mcqs: [], suggestions: [], trending: ["Paris Agreement", "DPDP Act", "Green Hydrogen", "ISRO", "PM-PRANAM"] });
+  const sourceFilter = (req.query.source || "").toString().trim();
+  const dateFrom = (req.query.dateFrom || "").toString().trim();
+  const dateTo = (req.query.dateTo || "").toString().trim();
+  const minScore = parseFloat((req.query.minScore || "7").toString()) || 7;
 
-  searchQueriesLog.push({ query: qStr, timestamp: new Date() });
-
-  const entitiesPool = [
-    { name: "ISRO", keywords: ["isro", "insat", "gslv", "satellite", "space"] },
-    { name: "Gaganyaan", keywords: ["gaganya", "manned", "spaceflight", "astronaut"] },
-    { name: "Chandrayaan", keywords: ["chandray", "moon", "lunar", "south pole"] },
-    { name: "IN-SPACe", keywords: ["in-space", "private space", "reform"] },
-    { name: "Paris Agreement", keywords: ["paris", "cop21", "climate treaty", "nationally determined"] },
-    { name: "DPDP Act", keywords: ["dpdp", "personal data", "privacy", "protection", "board"] },
-    { name: "PM-PRANAM", keywords: ["pranam", "fertilizer", "soil", "chemical"] },
-    { name: "NITI Aayog", keywords: ["niti", "planning", "state health", "cooperative federalism"] },
-    { name: "Green Hydrogen", keywords: ["green hydrogen", "electrolysis", "clean fuel", "sight"] }
-  ];
-
-  // Weighted ranking fuzzy scorer
-  const matchedArticles = db.articles.map((a: any) => {
-    let matchScore = 0;
-    matchScore += computeFuzzyScore(a.title, qStr) * 4;
-    matchScore += computeFuzzyScore(a.content, qStr);
-    matchScore += computeFuzzyScore(a.category, qStr) * 2;
-    matchScore += a.tags.reduce((acc: number, t: string) => acc + (t.toLowerCase().includes(qStr.toLowerCase()) ? 12 : 0), 0);
-
-    if (a.summary) {
-      matchScore += computeFuzzyScore(a.summary.whatHappened, qStr) * 2;
-      matchScore += computeFuzzyScore(a.summary.constitutionalLinks, qStr) * 1.5;
-      matchScore += computeFuzzyScore(a.summary.prelimsFacts, qStr) * 1.5;
-    }
-
-    return { ...a, matchScore };
-  })
-  .filter((a: any) => a.matchScore > 0)
-  .sort((a: any, b: any) => b.matchScore - a.matchScore);
-
-  // Auto-complete match suggestions
-  const suggestions = entitiesPool
-    .filter(e => e.keywords.some(k => k.includes(qStr.toLowerCase())) || e.name.toLowerCase().includes(qStr.toLowerCase()))
-    .map(e => e.name);
-
-  // Recalculate trending in last hour
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const recentQueries = searchQueriesLog.filter(s => s.timestamp > oneHourAgo);
-  const freqMap: Record<string, number> = {};
-  recentQueries.forEach(s => {
-    freqMap[s.query] = (freqMap[s.query] || 0) + 1;
-  });
-  const trending = Object.entries(freqMap)
-    .sort((a, b) => b[1] - a[1])
-    .map(([term]) => term)
-    .slice(0, 5);
-
-  if (trending.length === 0) {
-    trending.push("Paris Agreement", "DPDP Act", "Green Hydrogen", "ISRO", "PM-PRANAM");
+  const defaultTrending = ["Paris Agreement", "DPDP Act", "Green Hydrogen", "ISRO", "PM-PRANAM"];
+  if (!qStr && !sourceFilter && !dateFrom && !dateTo) {
+    return res.json({ articles: [], mcqs: [], suggestions: [], trending: defaultTrending });
   }
 
-  // MCQs matching query
-  const mcqs = db.articles
-    .filter((a: any) => a.mcq && (a.mcq.question.toLowerCase().includes(qStr.toLowerCase()) || a.mcq.explanation.toLowerCase().includes(qStr.toLowerCase())))
-    .map((a: any) => a.mcq);
+  if (qStr) searchQueriesLog.push({ query: qStr, timestamp: new Date() });
 
-  // Extract matched metadata
-  const matchedCategories = Array.from(new Set(matchedArticles.map((a: any) => a.category)));
-  const matchedSources = Array.from(new Set(matchedArticles.map((a: any) => a.source)));
-  const matchedEntities = entitiesPool
-    .filter(e => qStr.toLowerCase().includes(e.name.toLowerCase()) || e.keywords.some(k => qStr.toLowerCase().includes(k)))
-    .map(e => e.name);
+  let matchedArticles: any[] = [];
+
+  // ── Try MongoDB Atlas regex search (fast, real data) ──────────────────────
+  if (mongoReady) {
+    try {
+      const mDb = await connectMongo();
+      const col = mDb.collection("articles");
+      const mongoFilter: any = { relevanceScore: { $gte: minScore } };
+      if (sourceFilter) mongoFilter.source = { $regex: sourceFilter, $options: "i" };
+      if (dateFrom) mongoFilter.ingestionTimestamp = { ...mongoFilter.ingestionTimestamp, $gte: new Date(dateFrom).toISOString() };
+      if (dateTo) mongoFilter.ingestionTimestamp = { ...mongoFilter.ingestionTimestamp, $lte: new Date(dateTo + "T23:59:59Z").toISOString() };
+      if (qStr) {
+        mongoFilter.$or = [
+          { title: { $regex: qStr, $options: "i" } },
+          { content: { $regex: qStr, $options: "i" } },
+          { category: { $regex: qStr, $options: "i" } },
+          { tags: { $elemMatch: { $regex: qStr, $options: "i" } } },
+          { source: { $regex: qStr, $options: "i" } },
+          { "summary.whatHappened": { $regex: qStr, $options: "i" } },
+          { "summary.constitutionalLinks": { $regex: qStr, $options: "i" } },
+          { "summary.prelimsFacts": { $regex: qStr, $options: "i" } },
+        ];
+      }
+      const docs = await col.find(mongoFilter).sort({ relevanceScore: -1 }).limit(60).toArray();
+      matchedArticles = docs.map(({ _id, ...rest }: any) => sanitizeAndPolishUPSCArticle(rest));
+    } catch (err) {
+      console.error("[Search] MongoDB query error:", err);
+    }
+  }
+
+  // ── In-memory fuzzy fallback ───────────────────────────────────────────────
+  if (matchedArticles.length === 0) {
+    const db = loadDB();
+    matchedArticles = db.articles
+      .filter((a: any) => {
+        if (a.relevanceScore < minScore) return false;
+        if (sourceFilter && !a.source.toLowerCase().includes(sourceFilter.toLowerCase())) return false;
+        if (dateFrom && new Date(a.ingestionTimestamp) < new Date(dateFrom)) return false;
+        if (dateTo && new Date(a.ingestionTimestamp) > new Date(dateTo + "T23:59:59Z")) return false;
+        return true;
+      })
+      .map((a: any) => {
+        let score = 0;
+        if (qStr) {
+          score += computeFuzzyScore(a.title, qStr) * 4;
+          score += computeFuzzyScore(a.content, qStr);
+          score += computeFuzzyScore(a.category, qStr) * 2;
+          score += (a.tags || []).reduce((acc: number, t: string) => acc + (t.toLowerCase().includes(qStr.toLowerCase()) ? 12 : 0), 0);
+          if (a.summary) {
+            score += computeFuzzyScore(a.summary.whatHappened, qStr) * 2;
+            score += computeFuzzyScore(a.summary.constitutionalLinks, qStr) * 1.5;
+            score += computeFuzzyScore(a.summary.prelimsFacts, qStr) * 1.5;
+          }
+        } else {
+          score = a.relevanceScore;
+        }
+        return { ...a, matchScore: score };
+      })
+      .filter((a: any) => !qStr || a.matchScore > 0)
+      .sort((a: any, b: any) => b.matchScore - a.matchScore);
+  }
+
+  // ── MCQs ──────────────────────────────────────────────────────────────────
+  const mcqs = qStr
+    ? matchedArticles.filter((a: any) => a.mcq && (
+        (a.mcq.question || "").toLowerCase().includes(qStr.toLowerCase()) ||
+        (a.mcq.explanation || "").toLowerCase().includes(qStr.toLowerCase())
+      )).map((a: any) => a.mcq)
+    : [];
+
+  // ── Trending ──────────────────────────────────────────────────────────────
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const freqMap: Record<string, number> = {};
+  searchQueriesLog.filter(s => s.timestamp > oneHourAgo).forEach(s => {
+    freqMap[s.query] = (freqMap[s.query] || 0) + 1;
+  });
+  const trending = Object.entries(freqMap).sort((a, b) => b[1] - a[1]).map(([t]) => t).slice(0, 5);
+  if (trending.length === 0) trending.push(...defaultTrending);
 
   res.json({
-    articles: matchedArticles,
-    mcqs,
-    suggestions: Array.from(new Set([...suggestions, ...trending])).slice(0, 8),
+    articles: matchedArticles.slice(0, 60),
+    mcqs: mcqs.slice(0, 10),
+    suggestions: [],
     trending,
     debugging: {
-      searchedFields: ["title", "content", "category", "tags", "summary.whatHappened", "summary.constitutionalLinks"],
-      matchedEntities,
-      matchedCategories,
-      matchedSources,
+      engine: mongoReady ? "MongoDB Atlas" : "in-memory fuzzy",
       hitCounts: matchedArticles.length,
-      indexingHealth: "MONITORING_ACTIVE"
-    }
+      searchedFields: ["title", "content", "category", "tags", "summary.*"],
+    },
   });
 });
 
@@ -3858,16 +3033,6 @@ if (process.env.NODE_ENV !== "production") {
       // Cold-start database synchronization and auto scheduler initialization
       try {
         await syncWithMongo();
-        
-        // Active purge of any existing blacklisted sports/entertainment articles from DB cache
-        const startDb = loadDB();
-        const startArticlesLen = startDb.articles.length;
-        startDb.articles = startDb.articles.filter((art: any) => isArticleUPSCRelevant(art.title, art.content || ""));
-        if (startDb.articles.length < startArticlesLen) {
-          console.log(`[UPSC Filter] Bootup Purge: Removed ${startArticlesLen - startDb.articles.length} irrelevant articles from DB.`);
-          saveDB(startDb);
-        }
-
         startBackgroundScheduler();
       } catch (err) {
         console.error("Failed to start bootup tasks:", err);
@@ -3886,16 +3051,6 @@ if (process.env.NODE_ENV !== "production") {
     console.log(`[Production] Server running on port ${PORT}`);
     try {
       await syncWithMongo();
-      
-      // Active purge of any existing blacklisted sports/entertainment articles from DB cache
-      const startDb = loadDB();
-      const startArticlesLen = startDb.articles.length;
-      startDb.articles = startDb.articles.filter((art: any) => isArticleUPSCRelevant(art.title, art.content || ""));
-      if (startDb.articles.length < startArticlesLen) {
-        console.log(`[UPSC Filter] Bootup Purge: Removed ${startArticlesLen - startDb.articles.length} irrelevant articles from DB.`);
-        saveDB(startDb);
-      }
-
       startBackgroundScheduler();
     } catch (err) {
       console.error("Failed to start bootup tasks:", err);
