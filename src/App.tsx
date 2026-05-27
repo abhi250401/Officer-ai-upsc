@@ -40,8 +40,9 @@ import { User, Article, IngestionLog, Source, RevisionCard } from './types.ts';
 import ArticleDetail from './components/ArticleDetail.tsx';
 import PYQDesk from './components/PYQDesk.tsx';
 import AdminPortal from './components/AdminPortal.tsx';
+import LearningPath from './components/LearningPath.tsx';
 
-type AppTab = 'home' | 'search' | 'brief' | 'revision' | 'bookmarks' | 'admin';
+type AppTab = 'home' | 'search' | 'brief' | 'revision' | 'bookmarks' | 'path' | 'admin';
 
 export default function App() {
   // Authentication State
@@ -1116,6 +1117,7 @@ export default function App() {
             {[
               { tab: 'home', label: 'Intelligence Feed', icon: Compass },
               { tab: 'search', label: 'Syllabus Query', icon: SearchIcon },
+              { tab: 'path', label: 'Learning Path', icon: Layers },
               { tab: 'brief', label: 'Daily 15m Brief', icon: TrendingUp },
               { tab: 'revision', label: 'Revision Sandbox', icon: CheckSquare },
               { tab: 'bookmarks', label: 'Pinned Materials', icon: BookmarkIcon },
@@ -2280,6 +2282,13 @@ export default function App() {
           </div>
         )}
 
+        {/* TAB 5B: PERSONALIZED ADAPTIVE LEARNING PATH */}
+        {currentTab === 'path' && (
+          <div id="view-learning-path-wrapper">
+            <LearningPath token={token} onOpenArticle={(art) => handleSelectArticle(art.id)} />
+          </div>
+        )}
+
         {/* TAB 6: PREMIUM ADMIN INGESTION PORTAL */}
         {currentTab === 'admin' && (
           <div id="view-admin-dashboard" className="space-y-4">
@@ -3292,14 +3301,14 @@ export default function App() {
       {/* ==========================================
           STICKY COHESIVE BOTTOM NAV BAR (FOR MOBILE SCREEN DESIGN)
          ========================================== */}
-      <nav id="persistent-bottom-nav" className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#E7E5E4] grid grid-cols-5 py-2.5 z-45 select-none">
+      <nav id="persistent-bottom-nav" className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#E7E5E4] grid grid-cols-6 py-2.5 z-45 select-none">
         <button
           id="nav-btn-home"
           onClick={() => setCurrentTab('home')}
           className={`flex flex-col items-center justify-center space-y-1 cursor-pointer transition-colors ${currentTab === 'home' ? 'text-[#0F766E]' : 'text-stone-500 hover:text-stone-900'}`}
         >
           <Compass className="w-5 h-5" />
-          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold">Feed</span>
+          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold text-center">Feed</span>
         </button>
 
         <button
@@ -3315,7 +3324,16 @@ export default function App() {
           className={`flex flex-col items-center justify-center space-y-1 cursor-pointer transition-colors ${currentTab === 'search' ? 'text-[#0F766E]' : 'text-stone-500 hover:text-stone-900'}`}
         >
           <SearchIcon className="w-5 h-5" />
-          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold">Search</span>
+          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold text-center">Search</span>
+        </button>
+
+        <button
+          id="nav-btn-path"
+          onClick={() => setCurrentTab('path')}
+          className={`flex flex-col items-center justify-center space-y-1 cursor-pointer transition-colors ${currentTab === 'path' ? 'text-[#0F766E]' : 'text-stone-500 hover:text-stone-900'}`}
+        >
+          <Layers className="w-5 h-5" />
+          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold text-center">Path</span>
         </button>
 
         <button
@@ -3324,7 +3342,7 @@ export default function App() {
           className={`flex flex-col items-center justify-center space-y-1 cursor-pointer transition-colors ${currentTab === 'brief' ? 'text-[#0F766E]' : 'text-stone-500 hover:text-stone-900'}`}
         >
           <TrendingUp className="w-5 h-5 text-current-color" />
-          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold">Daily 10</span>
+          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold text-center">Daily 10</span>
         </button>
 
         <button
@@ -3333,7 +3351,7 @@ export default function App() {
           className={`flex flex-col items-center justify-center space-y-1 cursor-pointer transition-colors ${currentTab === 'revision' ? 'text-[#0F766E]' : 'text-stone-500 hover:text-stone-900'}`}
         >
           <CheckSquare className="w-5 h-5 text-current" />
-          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold">Revision</span>
+          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold text-center">Revision</span>
         </button>
 
         <button
@@ -3342,7 +3360,7 @@ export default function App() {
           className={`flex flex-col items-center justify-center space-y-1 cursor-pointer transition-colors ${currentTab === 'bookmarks' ? 'text-[#0F766E]' : 'text-stone-500 hover:text-stone-900'}`}
         >
           <BookmarkIcon className="w-5 h-5" />
-          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold">Pinned</span>
+          <span className="text-[9px] font-mono tracking-tighter uppercase font-bold text-center">Pinned</span>
         </button>
       </nav>
 

@@ -12,16 +12,20 @@ export interface User {
 export interface AISummary {
   id: string;
   articleId: string;
-  whatHappened: string;
-  background: string;
-  whyImportant: string;
-  constitutionalLinks: string;
-  internationalRelevance: string;
-  prelimsFacts: string;
-  mainsAnalysis: string;
-  wayForward: string;
-  pyqLinkage: string;
-  oneLineRevision: string;
+  detailedBrief?: string;    // DETAILED INTELLIGENCE BRIEF (PRIMARY)
+  prelimsFacts: string;      // QUICK PRELIMS FACTS
+  whyMatters?: string;       // WHY THIS MATTERS FOR UPSC (CONCISE)
+  oneLineRevision: string;   // ONE-LINE REVISION CORE
+  officialSources?: string;  // OFFICIAL SOURCES
+  // Backward compatibility fields
+  whatHappened?: string;
+  background?: string;
+  whyImportant?: string;
+  constitutionalLinks?: string;
+  internationalRelevance?: string;
+  mainsAnalysis?: string;
+  wayForward?: string;
+  pyqLinkage?: string;
 }
 
 export interface MCQ {

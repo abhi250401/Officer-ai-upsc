@@ -137,16 +137,15 @@ const initialArticles = [
     summary: {
       id: "sum-seed-1",
       articleId: "seed-1",
-      whatHappened: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for the production, usage, and export of green hydrogen.",
-      background: "India has committed to achieving net-zero carbon emissions by 2070 at COP26. Fossil fuel imports compromise economic independence, calling for a transition to scalable, domestically generated green energy alternatives.",
-      whyImportant: "It targets the creation of over ₹8 lakh crore in investments, creation of over 6 lakh jobs, reduction of nearly 50 MMT of annual greenhouse gas emissions, and savings of ₹1 lakh crore in fossil fuel imports by 2030.",
-      constitutionalLinks: "Article 48A (Directive Principles of State Policy - Protection & improvement of environment & safeguarding of forests & wild life), Article 21 (Right to clean environment as part of Right to Life), and Seventh Schedule (List I - National planning under Union List).",
-      internationalRelevance: "Aligns with Paris Agreement commitments and NDC goals. Fosters strategic positioning against international green mandates like the EU's Carbon Border Adjustment Mechanism (CBAM).",
-      prelimsFacts: "• Under MNRE supervision.\n• SIGHT Program: Strategic Interventions for Green Hydrogen Transition.\n• Target of 5 MMT green hydrogen production capacity per annum by 2030.\n• Green Hydrogen definition: Generated via electrolysis of water powered by renewable source.",
-      mainsAnalysis: "Mains Answer writing point: Transitioning India's hard-to-abate sectors (steel, cement, refineries) into low-carbon operations. Overcomes intermittent renewable power challenges but faces bottlenecks in electrolysis high costs, infrastructure pipeline set up, and high water intensity.",
-      wayForward: "Establish strong public-private partnerships (PPP), subsidize electrolyzer manufacturing locally to build core domestic value chains, and install green hydrogen transport pipelines.",
-      pyqLinkage: "Mains 2021: Describe the major outcomes of the 26th session of the COP to UN UNFCCC. Prelims 2023: Questions regarding solar power and other green energy schemes.",
-      oneLineRevision: "₹19,744 Cr National Green Hydrogen Mission seeks 5 MMT production capacity by 2030, saving imports & emissions."
+      detailedBrief: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for green hydrogen production, usage, and export. The policy strategically addresses India’s COP26 Net-Zero 2070 commitments by reducing fossil fuel dependency and carbon intensities in hard-to-abate sectors (steel, cement, chemical refineries). By establishing SIGHT (Strategic Interventions for Green Hydrogen Transition) as its principal financial vehicle, the mission incentivizes domestic electrolyzer production and hydrogen generation. Key challenges include high electrolysis capital expenditures, storage infrastructure pipelines, and substantial pure water requirements.",
+      prelimsFacts: "• **Nodal Ministry**: Ministry of New and Renewable Energy (MNRE).\n• **Financial Outlay**: Initial budget of ₹19,744 crore; allocates ₹17,490 crore for SIGHT subsidies, ₹1,466 crore for pilot runs, and ₹400 crore for R&D.\n• **Target Output**: Establish 5 Million Metric Tonnes (MMT) annual production capacity of green hydrogen by 2030.\n• **Technical Definition**: Green hydrogen is produced via electrolysis of water powered entirely by renewable energy sources.",
+      whyMatters: "GS Paper II & III: Infrastructure planning, clean energy transition, environment conservation acts, and economic policy instruments.",
+      oneLineRevision: "The ₹19,744 Cr National Green Hydrogen Mission targets 5 MMT annual capacity by 2030, anchored by SIGHT incentives.",
+      officialSources: "• Ministry of New and Renewable Energy (MNRE) Gazetted Resolution\n• Press Information Bureau Cabinet Releases",
+      // Back-compat fields
+      whatHappened: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for green hydrogen.",
+      whyImportant: "GS Paper III: Infrastructure planning, clean energy transition, environment conservation acts, and economic policy instruments.",
+      prelimsFactsBackup: "• Nodal Ministry: MNRE.\n• Outlay: ₹19,744 Cr.\n• Target: 5 MMT by 2030."
     },
     mcq: {
       id: "mcq-seed-1",
@@ -160,50 +159,48 @@ const initialArticles = [
         "Neither 1 nor 2"
       ],
       correctAnswer: 2,
-      explanation: "Both statements 1 and 2 are absolutely correct. SIGHT (Strategic Interventions for Green Hydrogen Transition) provides financial incentives for setting up electrolyzer manufacturing plants and producing green hydrogen. The target for 2030 is indeed at least 5 MMT per annum.",
+      explanation: "Both statements 1 and 2 are correct. SIGHT (Strategic Interventions for Green Hydrogen Transition) is the primary incentive scheme within the Mission, focusing on local electrolyzer manufacturing and actual green hydrogen yield of at least 5 MMT per annum by 2030.",
       tags: ["Environment", "Green Hydrogen"]
     }
   },
   {
     id: "seed-2",
-    title: "India-Middle East-Europe Economic Corridor (IMEC) Signed at G20 Summit",
-    source: "Ministry of External Affairs",
-    sourcePriority: "HIGH" as const,
+    title: "Cabinet Approves Five-Year Extension of Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY)",
+    source: "PIB (Press Information Bureau)",
+    sourcePriority: "VERY HIGH" as const,
     articleHash: "hash-seed-2",
     ingestionTimestamp: "2026-05-23T15:30:00Z",
-    relevanceScore: 9,
-    category: "International Relations",
-    tags: ["IMEC", "G20 Summit", "Connectivity", "Belt and Road Initiative", "Geopolitics"],
-    content: "A memorandum of understanding (MoU) on the India-Middle East-Europe Economic Corridor (IMEC) was signed by India, USA, Saudi Arabia, UAE, European Union, Italy, France, and Germany. The IMEC will consist of two separate corridors: the East Corridor connecting India to the Arabian Gulf, and the Northern Corridor connecting the Arabian Gulf to Europe. It includes a railway corridor, ship-to-rail transit network, and high-speed data cables.",
+    relevanceScore: 10,
+    category: "Welfare Schemes",
+    tags: ["PMGKAY", "Food Security", "Welfare Schemes", "Public Distribution System", "NFSA", "Poverty Alleviation"],
+    content: "The Union Cabinet has approved the extension of the Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY) for another five years starting from January 1, 2024. Under this food security scheme, free foodgrains will be provided to about 81.35 crore beneficiaries under the National Food Security Act (NFSA), 2013, at an estimated economic cost of ₹11.80 lakh crore to the Central Government. The scheme ensures nationwide food security while mitigating the fiscal and inflationary pressures on marginalized households.",
     readingTime: 4,
     summary: {
       id: "sum-seed-2",
       articleId: "seed-2",
-      whatHappened: "A historic multinational rail and shipping corridor (IMEC) was launched on the sidelines of the G20 summit, linking India to Europe via West Asia.",
-      background: "Designed as a strategic counterweight to China's Belt and Road Initiative (BRI). It leverages existing maritime routes and railway projects to establish an efficient transport network.",
-      whyImportant: "Improves economic integration, reduces transit times between India and Europe by 40%, lowers greenhouse gases, and bypasses challenging transit pathways through Pakistan/Afghanistan.",
-      constitutionalLinks: "Article 253 (Legislation for giving effect to international agreements) and Entry 10 of List I (Foreign Affairs and treaties).",
-      internationalRelevance: "Reshapes West Asian geopolitics. Anchors USA-India-Saudi-UAE economic alignment. Addresses infrastructure gaps in the Middle East and enhances transcontinental supply chains.",
-      prelimsFacts: "• Ports involved in India: Mundra and Kandla (Gujarat), JNPT (Mumbai).\n• East Corridor: India to Arabian Gulf (UAE/Saudi).\n• Northern Corridor: Arabian Gulf to European countries (Greece/Italy/France).",
-      mainsAnalysis: "Addresses infrastructure connectivity, counters geopolitical dominance of China's BRI, enhances strategic leverage of India in the Gulf region. Vulnerabilities include regional geopolitical instability (e.g., Suez Canal or Red Sea tensions) and massive financial coordination needs among disparate nations.",
-      wayForward: "Standardize customs regulations, fast-track rail construction in dry desert corridors, and maintain strong strategic autonomy while balancing regional relations.",
-      pyqLinkage: "Mains 2022: 'China's Belt and Road Initiative poses a direct challenge to India's sovereignty'. Discuss. GS Paper II.",
-      oneLineRevision: "IMEC links India to Europe via UAE, Saudi Arabia, Jordan, and Israel/Greece, serving as a counter to BRI."
+      detailedBrief: "The Union Cabinet has institutionalized the free foodgrain policy by approving a five-year extension of the Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY) from January 1, 2024, to December 31, 2028. This decision integrates the emergency pandemic-era welfare scheme directly with the National Food Security Act (NFSA), 2013. The economic outlay of ₹11.80 lakh crore over five years will be fully absorbed by the Central Government, shielding 81.35 crore vulnerable citizens from food price volatility. This structural transition raises vital fiscal and macroeconomic debates: it reduces extreme household consumption vulnerability but places a persistent burden on the central food subsidy bill, requiring streamlined FCI procurement and buffer stock management.",
+      prelimsFacts: "• **Nodal Ministry**: Ministry of Consumer Affairs, Food and Public Distribution.\n• **Beneficiary Base**: Covers ~81.35 crore cardholders spanning Antyodaya Anna Yojana (AAY) and Priority Households (PHH).\n• **Structure of Entitlement**: Priority Households receive 5 kg per person per month, while AAY households receive 35 kg per family per month free of cost.\n• **Funding Pattern**: Central Sector Scheme; 100% funded by the Central Government.\n• **Constitutional Basis**: Direct legislative manifestation of Article 47 (State duty to improve nutrition, standard of living and public health) read under Article 21 (Right to Life).",
+      whyMatters: "GS Paper II & III: Food security, welfare federalism, public distribution system (PDS) reforms, agricultural procurement, and fiscal deficits.",
+      oneLineRevision: "PMGKAY is extended for five years (2024–2028), securing free foodgrains for 81.35 crore NFSA cardholders at a central cost of ₹11.80 lakh crore.",
+      officialSources: "• Department of Food and Public Distribution Notifications\n• Press Information Bureau Cabinet Briefing Sheets\n• National Food Security Act (NFSA), 2013 Statutory Guidelines",
+      // Back-compat fields
+      whatHappened: "The Union Cabinet has institutionalized the free foodgrain policy by approving a five-year extension of PMGKAY.",
+      whyImportant: "GS Paper II & III: Food security, welfare federalism, public distribution system (PDS) reforms, agricultural procurement, and fiscal deficits."
     },
     mcq: {
       id: "mcq-seed-2",
       articleId: "seed-2",
-      articleTitle: "India-Middle East-Europe Economic Corridor",
-      question: "Which of the following nations/bodies are signatories to the India-Middle East-Europe Economic Corridor (IMEC) MoU?\n1. India\n2. United States of America\n3. Iran\n4. European Union\nSelect the correct answer using the code given below:",
+      articleTitle: "PMGKAY Five Year Extension",
+      question: "With reference to the Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY), which of the following statements is / are correct?\n1. It is a Central Sector Scheme under which the entire financial liability of food subsidy is borne by the Union Government.\n2. Both Antyodaya Anna Yojana (AAY) and Priority Households (PHH) beneficiaries receive exactly 5 kg of foodgrains per person per month under the scheme.\nSelect the correct answer using the code given below:",
       options: [
-        "1, 2, and 3 only",
-        "1, 2, and 4 only",
-        "2, 3, and 4 only",
-        "1, 2, 3, and 4"
+        "1 only",
+        "2 only",
+        "Both 1 and 2",
+        "Neither 1 nor 2"
       ],
-      correctAnswer: 1,
-      explanation: "Iran is NOT a signatory or member of IMEC. Signatories include India, the US, Saudi Arabia, the UAE, the European Union, France, Germany, and Italy. Bypassing Iran/Pakistan is a strategic element of IMEC.",
-      tags: ["International Relations", "IMEC"]
+      correctAnswer: 0,
+      explanation: "Statement 1 is correct: PMGKAY is a Central Sector Scheme with 100% funding by the Union. Statement 2 is incorrect because while PHH cardholders receive 5 kg of foodgrains per person per month, AAY households receive a block entitlement of 35 kg per family per month.",
+      tags: ["Welfare Schemes", "Food Security", "PMGKAY"]
     }
   },
   {
@@ -221,16 +218,14 @@ const initialArticles = [
     summary: {
       id: "sum-seed-3",
       articleId: "seed-3",
-      whatHappened: "The Parliament of India enacted the Digital Personal Data Protection (DPDP) Act, 2023, sealing a six-year legislative effort since the landmark Puttawamy decision on privacy.",
-      background: "In K.S. Puttaswamy v. Union of India (2017), the Supreme Court ruled that the Right to Privacy is a fundamental right under Article 21, recommending a dedicated data protective statutory mechanism.",
-      whyImportant: "It applies to digital personal data processed within India, and outside India if it is in connection with offering goods/services to Indian citizens. Establishes the Data Protection Board of India.",
-      constitutionalLinks: "Article 21 (Right to Privacy), Article 19 (Right to Speech versus Freedom of Trade), and Seventh Schedule (List I Union List Entry 31: Posts, telegraphs, telephones, wireless, broadcasting).",
-      internationalRelevance: "Corresponds dynamically to EU General Data Protection Regulation (GDPR) principles of purpose limitation, data minimisation, and storage limitation.",
-      prelimsFacts: "• Data Principal: Person whose data is processed.\n• Data Fiduciary: Organization determining the purpose of processing.\n• DPBI: Data Protection Board of India (adjudicating body).\n• Max penalty of ₹250 crore for key data breaches.",
-      mainsAnalysis: "Strikes a neat balance between data-led economic expansion and individual privacy rights of citizens. Key flaws highlighted by advocates include extensive exemptions granted to standard Central Government offices, potential weakening of Right to Information (RTI) Act provisions, and a Board whose composition is appointed purely by the Union Executive.",
-      wayForward: "Ensure operational independence of the Data Protection Board, construct absolute safety clauses for national public databases, and draft clear subordinate rules.",
-      pyqLinkage: "Mains 2018: Examined PUTTASWAMY judgment and right to privacy implications relative to surveillance. GS Paper II.",
-      oneLineRevision: "DPDP Act 2023 secures personal digital data processing under Puttaswamy guidelines, setting up DPBI with penalties up to ₹250 Cr."
+      detailedBrief: "The enactment of the Digital Personal Data Protection (DPDP) Act, 2023, represents India's first standalone statutory framework for digital privacy, concluding a six-year legislative process triggered by the Supreme Court's landmark Puttaswamy ruling. The Act applies strictly to processed digital personal data and introduces a dual structure of rights and duties between the 'Data Principal' (individual) and the 'Data Fiduciary' (processing organization). While it modernizes consent mechanics and mandates purpose limitation, critics voice serious concerns over broad governmental exemptions, potential dilution of the Right to Information (RTI) Act, and the lack of independent structural appointments to the newly formed adjudicatory body.",
+      prelimsFacts: "• **Regulatory Body**: Establishes the Data Protection Board of India (DPBI) for compliance and dispute resolution.\n• **Consent Parameters**: Consent must be free, specific, informed, unconditional, and unambiguous, supported by an easy withdraw option.\n• **Fiduciary Liabilities**: Places strict obligations for data security; failing to prevent personal data breach carries penalties up to ₹250 crore.\n• **Judicial Foundation**: Grounded in K.S. Puttaswamy v. Union of India (2017) establishing the Right to Privacy under Article 21.",
+      whyMatters: "GS Paper II: Fundamental Rights (Article 21), statutory regulatory authorities, digital technology governance, and federal regulatory balances.",
+      oneLineRevision: "DPDP Act 2023 governs digital personal data processing, backed by the Data Protection Board of India with breach penalties up to ₹250 crore.",
+      officialSources: "• Gazette of India Official Legislation (DPDP Act, 2023)\n• PRS Legislative Research Analysis\n• Supreme Court K.S. Puttaswamy Judgment Sheets",
+      // Back-compat fields
+      whatHappened: "The Parliament enacted the Digital Personal Data Protection Act, 2023, sealing data privacy frameworks.",
+      whyImportant: "GS Paper II: Fundamental Rights (Article 21), statutory regulatory authorities, digital technology governance."
     },
     mcq: {
       id: "mcq-seed-3",
@@ -244,11 +239,124 @@ const initialArticles = [
         "National Cyber Security Alliance (NCSA)"
       ],
       correctAnswer: 1,
-      explanation: "Under the DPDP Act, 2023, the Data Protection Board of India (DPBI) is established as an independent adjudicating body in charge of looking into complaints, monitoring compliance, and imposing penalties.",
+      explanation: "Under the DPDP Act, 2023, the Data Protection Board of India (DPBI) is established as an independent adjudicating body in charge of investigating leaks, compliance failures, and imposing statutory penalties up to ₹250 crore.",
       tags: ["Governance", "DPDP Act"]
     }
   }
 ];
+
+function cleanRoboticJargon(text: string): string {
+  if (!text) return "";
+  let polished = text;
+  
+  // Clean up typical generic AI boilerplate and forced governance wording
+  const replacements: Record<string, string> = {
+    "institutional capability enhancement": "agency capacity planning",
+    "procedural streamlining": "administrative simplification",
+    "framework alignment": "policy integration",
+    "developmental coordination": "strategic coordination",
+    "implementation bottlenecks": "operational constraints",
+    "administrative synchronization": "regulatory harmonization",
+    "state planning indicators": "developmental indices",
+    "capability assessment frameworks": "performance benchmarks",
+    "institutional strengthening": "administrative capacity building",
+    "procedural reforms": "operational improvements",
+    "technology-first implementation": "digital service delivery",
+    "administrative streamlining": "process simplification",
+    "governance transparency": "fiduciary accountability",
+    "structural review": "sectoral assessment",
+    "inclusive development": "equitable outreach",
+    "capacity building initiatives": "skills empowerment programs",
+    "policy interventions": "strategic measures",
+    "vibrant ecosystem": "productive environment",
+    "holistic approach": "comprehensive strategy"
+  };
+
+  for (const [key, val] of Object.entries(replacements)) {
+    const rx = new RegExp(key, "gi");
+    polished = polished.replace(rx, val);
+  }
+  return polished;
+}
+
+function sanitizeAndPolishUPSCArticle(article: any): any {
+  if (!article) return article;
+  
+  const copy = JSON.parse(JSON.stringify(article));
+  
+  if (!copy.summary) {
+    copy.summary = {};
+  }
+  
+  // Extract or build a beautiful detailed intelligence brief with zero filler text
+  let rawBrief = copy.summary.detailedBrief || copy.summary.whatHappened || copy.content || "";
+  if (copy.summary.background && !rawBrief.includes(copy.summary.background)) {
+    rawBrief = rawBrief + "\n\n**Historical & Socio-Economic Context:**\n" + copy.summary.background;
+  }
+  if (copy.summary.mainsAnalysis && !rawBrief.includes(copy.summary.mainsAnalysis)) {
+    rawBrief = rawBrief + "\n\n**Mains Analytical Perspective:**\n" + copy.summary.mainsAnalysis;
+  }
+  if (copy.summary.wayForward && !rawBrief.includes(copy.summary.wayForward)) {
+    rawBrief = rawBrief + "\n\n**Substantive Policy Reforms & Action Outline:**\n" + copy.summary.wayForward;
+  }
+  
+  const detailedBrief = cleanRoboticJargon(rawBrief);
+  
+  const prelimsFacts = cleanRoboticJargon(
+    copy.summary.prelimsFacts || 
+    "• Direct factual references and operational indicators under evaluation.\n• Central Ministry involvement and relevant timeline benchmarks."
+  );
+  
+  const whyMatters = cleanRoboticJargon(
+    copy.summary.whyMatters || 
+    copy.summary.whyImportant || 
+    `GS Paper Syllabus focus: ${copy.category || "Governance"}`
+  );
+  
+  const oneLineRevision = cleanRoboticJargon(
+    copy.summary.oneLineRevision || 
+    copy.title || 
+    ""
+  );
+
+  let officialSources = cleanRoboticJargon(copy.summary.officialSources || "");
+  if (!officialSources) {
+    const src = copy.source ? copy.source.toLowerCase() : "";
+    if (src.includes("pib")) {
+      officialSources = "• Press Information Bureau (PIB India) Cabinet Releases\n• Government of India Official Gazette Notifications";
+    } else if (src.includes("prs")) {
+      officialSources = "• PRS Legislative Research Parliamentary Bill Summaries\n• Standing Committee Reports, Parliament of India";
+    } else if (copy.category === "Economy" || copy.category === "Agriculture") {
+      officialSources = "• Reserve Bank of India (RBI) Notifications & Policy Statements\n• Union Ministry of Finance Reports\n• Budget & Economic Survey of India Tables";
+    } else if (copy.category === "Environment") {
+      officialSources = "• Ministry of Environment, Forest and Climate Change (MoEFCC) Directives\n• United Nations Climate Change Secretariat (UNFCCC) Agreements";
+    } else {
+      officialSources = `• Official Gazette of India Publications\n• Nodal Department Circulars & Press Bulletins`;
+    }
+  }
+
+  copy.summary.detailedBrief = detailedBrief;
+  copy.summary.prelimsFacts = prelimsFacts;
+  copy.summary.whyMatters = whyMatters;
+  copy.summary.oneLineRevision = oneLineRevision;
+  copy.summary.officialSources = officialSources;
+
+  // Back-compat fields
+  copy.summary.whatHappened = detailedBrief;
+  copy.summary.whyImportant = whyMatters;
+
+  copy.title = cleanRoboticJargon(copy.title);
+  copy.content = cleanRoboticJargon(copy.content);
+  if (copy.mcq) {
+    copy.mcq.question = cleanRoboticJargon(copy.mcq.question);
+    copy.mcq.explanation = cleanRoboticJargon(copy.mcq.explanation);
+    if (copy.mcq.options) {
+      copy.mcq.options = copy.mcq.options.map((opt: string) => cleanRoboticJargon(opt));
+    }
+  }
+  
+  return copy;
+}
 
 // In-memory cache for MongoDB-driven store
 let cachedDB: any = null;
@@ -262,7 +370,7 @@ function loadDB() {
   // Base default fallback when MongoDB is not loaded yet
   const defaultDB = {
     users: [] as any[],
-    articles: [...initialArticles],
+    articles: [...initialArticles].map(a => sanitizeAndPolishUPSCArticle(a)),
     bookmarks: [] as any[],
     revision_cards: [] as any[],
     ingestion_logs: [
@@ -345,7 +453,7 @@ async function syncWithMongo() {
   }
 
   try {
-    const collectionsToSync = ["users", "articles", "sources", "bookmarks", "revision_cards", "ingestion_logs"];
+    const collectionsToSync = ["users", "articles", "sources", "bookmarks", "revision_cards", "ingestion_logs", "mcq_attempts"];
     
     for (const key of collectionsToSync) {
       const colName = key === "revision_cards" ? "revision_cards" : key;
@@ -416,6 +524,11 @@ async function syncWithMongo() {
         const { _id, ...rest } = item;
         return rest;
       });
+      
+      // Polish articles to high-density clean format
+      if (key === "articles" && db.articles) {
+        db.articles = db.articles.map((a: any) => sanitizeAndPolishUPSCArticle(a));
+      }
     }
 
     cachedDB = db;
@@ -423,7 +536,7 @@ async function syncWithMongo() {
   } catch (err) {
     console.error("Error loading/seeding data from MongoDB Atlas on startup:", err);
     if (!cachedDB) {
-      db.articles = [...initialArticles];
+      db.articles = [...initialArticles].map(a => sanitizeAndPolishUPSCArticle(a));
       db.sources = [...initialSources];
       cachedDB = db;
     }
@@ -435,6 +548,9 @@ async function syncWithMongo() {
 // Save database state synchronously to memory cache and asynchronously in-full directly to MongoDB Atlas
 function saveDB(data: any) {
   try {
+    if (data && data.articles) {
+      data.articles = data.articles.map((a: any) => sanitizeAndPolishUPSCArticle(a));
+    }
     cachedDB = data;
     if (process.env.MONGODB_URI) {
       Promise.all([
@@ -443,6 +559,7 @@ function saveDB(data: any) {
         saveToMongo("sources", data.sources || []),
         saveToMongo("bookmarks", data.bookmarks || []),
         saveToMongo("revision_cards", data.revision_cards || []),
+        saveToMongo("mcq_attempts", data.mcq_attempts || []),
         saveToMongo("ingestion_logs", data.ingestion_logs || [])
       ]).catch((err) => console.error("Async MongoDB save propagation failed:", err));
     }
@@ -1564,6 +1681,194 @@ app.get("/api/mcqs", (req, res) => {
     .filter(a => a.mcq)
     .map(a => a.mcq);
   res.json(mcqs);
+});
+
+// Persistent MCQ scoring/attempt submission and tracking
+app.post("/api/mcq/attempt", (req, res) => {
+  const userId = getUserIdFromReq(req) || "anonymous-officer";
+  const { mcqId, optionIndex, isCorrect, category } = req.body;
+  if (!mcqId || optionIndex === undefined || isCorrect === undefined) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  const db = loadDB();
+  if (!db.mcq_attempts) {
+    db.mcq_attempts = [];
+  }
+
+  const newAttempt = {
+    id: "attempt-" + crypto.randomUUID().substring(0, 8),
+    userId,
+    mcqId,
+    optionIndex,
+    isCorrect,
+    category: category || "General",
+    timestamp: new Date().toISOString()
+  };
+
+  db.mcq_attempts.push(newAttempt);
+  saveDB(db);
+
+  res.json({ success: true, attempt: newAttempt });
+});
+
+// Personalized Learning Path computation engine
+app.get("/api/learning-path", (req, res) => {
+  const userId = getUserIdFromReq(req) || "anonymous-officer";
+  const db = loadDB();
+
+  // Load user specific interactions
+  const myBookmarks = (db.bookmarks || []).filter((b: any) => b.userId === userId);
+  const myRevisionCards = (db.revision_cards || []).filter((rc: any) => rc.userId === userId || rc.userId === "anonymous-officer");
+  const myMCQAttempts = (db.mcq_attempts || []).filter((at: any) => at.userId === userId);
+
+  // Compute category accuracy to prioritize weaknesses
+  const categoryStats: Record<string, { total: number; correct: number }> = {};
+  myMCQAttempts.forEach((at: any) => {
+    const cat = at.category || "General";
+    if (!categoryStats[cat]) {
+      categoryStats[cat] = { total: 0, correct: 0 };
+    }
+    categoryStats[cat].total += 1;
+    if (at.isCorrect) {
+      categoryStats[cat].correct += 1;
+    }
+  });
+
+  const categoryAccuracy: Record<string, number> = {};
+  Object.keys(categoryStats).forEach((cat) => {
+    categoryAccuracy[cat] = Math.round((categoryStats[cat].correct / categoryStats[cat].total) * 100);
+  });
+
+  // Collect weak categories (accuracy under 75% or with wrong attempts)
+  const weakCategories: string[] = [];
+  Object.keys(categoryAccuracy).forEach((cat) => {
+    if (categoryAccuracy[cat] < 75) {
+      weakCategories.push(cat);
+    }
+  });
+
+  // Collect recently bookmarked/revised categories (to foster active reinforcement)
+  const engagedCategories: string[] = [];
+  myBookmarks.forEach((bm: any) => {
+    const art = db.articles.find((a: any) => a.id === bm.articleId);
+    if (art && !engagedCategories.includes(art.category)) {
+      engagedCategories.push(art.category);
+    }
+  });
+  myRevisionCards.forEach((rc: any) => {
+    const art = db.articles.find((a: any) => a.id === rc.articleId);
+    if (art && !engagedCategories.includes(art.category)) {
+      engagedCategories.push(art.category);
+    }
+  });
+
+  // Construct prioritized focus topics list
+  const focusTopics: any[] = [];
+  const processedCats = new Set<string>();
+
+  // Weak categories take highest priority
+  weakCategories.forEach((cat) => {
+    const stat = categoryStats[cat];
+    focusTopics.push({
+      category: cat,
+      reason: `You have answered ${stat.correct}/${stat.total} MCQs correctly (${categoryAccuracy[cat]}% accuracy). Prioritizing high-yield study notes.`,
+      priority: "HIGH"
+    });
+    processedCats.add(cat);
+  });
+
+  // Engaged but not practicing category
+  engagedCategories.forEach((cat) => {
+    if (!processedCats.has(cat)) {
+      focusTopics.push({
+        category: cat,
+        reason: `Based on your recent bookmarks and active revision cards. Consolidate your grasp with focused review briefs.`,
+        priority: "MEDIUM"
+      });
+      processedCats.add(cat);
+    }
+  });
+
+  // Fallback to high-signal general topics if no personalized patterns are found yet
+  if (focusTopics.length === 0) {
+    focusTopics.push({
+      category: "Welfare Schemes",
+      reason: "Core UPSC syllabus demand: Free foodgrain policies and PMGKAY extension details.",
+      priority: "HIGH"
+    });
+    focusTopics.push({
+      category: "Governance",
+      reason: "Constitutional linkages of personal data rights and statutory regulators (DPBI).",
+      priority: "MEDIUM"
+    });
+  }
+
+  // Gather Recommendations: 3 focused articles
+  const recommendedArticles: any[] = [];
+  const recommendedMCQs: any[] = [];
+  const recommendedCards: any[] = [];
+
+  // Filter based on focus categories, sorting by high relevance score
+  const targetCategories = Array.from(processedCats).length > 0 ? Array.from(processedCats) : ["Welfare Schemes", "Governance", "Environment"];
+
+  db.articles
+    .filter((a: any) => targetCategories.includes(a.category))
+    .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
+    .forEach((art: any) => {
+      if (recommendedArticles.length < 3) {
+        recommendedArticles.push(art);
+      }
+      if (art.mcq && recommendedMCQs.length < 3 && !myMCQAttempts.some((at: any) => at.mcqId === art.mcq.id)) {
+        recommendedMCQs.push(art.mcq);
+      }
+    });
+
+  // Fill MCQs from all articles if we couldn't find enough unanswered inside target categories
+  if (recommendedMCQs.length < 3) {
+    db.articles.forEach((art: any) => {
+      if (art.mcq && recommendedMCQs.length < 3 && !recommendedMCQs.some((m: any) => m.id === art.mcq.id)) {
+        recommendedMCQs.push(art.mcq);
+      }
+    });
+  }
+
+  // Revision cards matching focus categories
+  myRevisionCards.forEach((rc: any) => {
+    const art = db.articles.find((a: any) => a.id === rc.articleId);
+    if (art && targetCategories.includes(art.category) && recommendedCards.length < 3) {
+      recommendedCards.push({
+        ...rc,
+        articleTitle: art.title,
+        category: art.category
+      });
+    }
+  });
+
+  // If no cards, populate from standard high-yield revision statements
+  if (recommendedCards.length === 0) {
+    db.articles.slice(0, 3).forEach((art: any) => {
+      recommendedCards.push({
+        id: "suggested-card-" + art.id,
+        articleId: art.id,
+        articleTitle: art.title,
+        category: art.category,
+        customNotes: art.summary?.oneLineRevision || "High-retention macro policy target."
+      });
+    });
+  }
+
+  res.json({
+    focusTopics: focusTopics.slice(0, 3),
+    suggestedArticles: recommendedArticles,
+    suggestedMCQs: recommendedMCQs,
+    suggestedRevisionCards: recommendedCards,
+    performanceSummary: {
+      totalPracticed: myMCQAttempts.length,
+      overallAccuracy: myMCQAttempts.length > 0 ? Math.round((myMCQAttempts.filter((a: any) => a.isCorrect).length / myMCQAttempts.length) * 100) : 100,
+      categoryAccuracy
+    }
+  });
 });
 
 // ==========================================
@@ -2835,41 +3140,34 @@ async function processRawArticleThroughGemini(title: string, rawContent: string,
   }
 
   // 3. Generate Categorization, Tags, Syllabus-focused analysis, and MCQ
-  const analyticalPrompt = `You are an elite UPSC Current Affairs Educator and IAS coach. Provide an objective, highly academic, and strict syllabus-focused analysis for the following article. Translate journalistic narrative into crisp syllabus-focused insights.
-  
-  CRITICAL INSTRUCTION:
-  - Do NOT hallucinate constitutional or DPSP links.
-  - Do NOT force-fit unlinked background or PYQs.
-  - If a topic does not have direct constitutional linkages, write "None direct" or "N/A" for constitutionalLinks.
-  - If a topic has no international linkages or direct PYQ mapping, write "N/A" rather than force-fitting random entries.
-  - Never generate generic tags like "AI Auto Ingestion", "Admin", or "Parser Module". Use ONLY clean, academic syllabus tags.
+  const analyticalPrompt = `You are a Senior UPSC Faculty Editor and Chief of Academic Material. Produce a high-density, rigorous UPSC Syllabus Brief for the following article. Translate journalistic tone into premium, space-efficient, and academically rigorous policy intelligence.
+
+  CRITICAL EDITORIAL CONSTRAINTS & PROHIBITIONS:
+  1. DO NOT use generic AI filler, MBA boilerplate, or vague governance jargon. Absolutely discard phrases like: "procedural streamlining", "efficiency optimization", "framework alignment", "developmental coordination", "institutional strengthening", "structural reinforcement", "strategic alignment indices", "synergistic frameworks", "resource optimization", or "structural bottlenecks".
+  2. Map the category with extreme semantic accuracy, policy context, and syllabus relevance. For example, food subsidies and schemes like PMGKAY must map to 'Welfare Schemes' or 'Food Security' or 'Social Justice' or 'Poverty & Hunger'—NEVER categorize standard food or welfare schemes under 'Security'.
+  3. No forced constitutional linkage: Only connect constitutional articles (like Article 21 or Article 47) if there is an explicit, direct legislative or fundamental right linkage. If none, write "None direct" or leave blank.
+  4. Diverse narrative styles: Do not use a template style. Write specifically about the details of the policy (e.g. fiscal costs, subsidy outlays, statutory provisions, implementation debates, and administrative challenges).
+  5. If the AI doesn’t have high-value, academically precise analysis to add, SAY LESS. Do not attempt to inflate standard headlines into verbose paragraphs of pseudo-intellectual filler. Precision is more important than verbosity.
 
   Title: ${title}
   Content: ${rawContent}
 
   Perform two actions:
-  1. Determine the core UPSC Syllabus category (Strictly choose exactly one of: Economy, Environment, International Relations, Governance, Science & Tech, Security, Agriculture).
-  2. Create an elite structural series of revision-first insights. No generic journalism fluff.
-  
-  Generate a JSON output following this precise schema:
+  1. Determine the core UPSC Syllabus category. Strictly choose exactly one of: Welfare Schemes, Food Security, Social Justice, Poverty & Hunger, Public Distribution System, Economy, Environment, International Relations, Governance, Science & Tech, Security, Agriculture.
+  2. Create an elite structural series of high-density insights following this precise JSON schema:
   {
-    "category": "Economy" | "Environment" | "International Relations" | "Governance" | "Science & Tech" | "Security" | "Agriculture",
-    "tags": ["Tag1", "Tag2"], // academic syllabus tags only
+    "category": "Welfare Schemes" | "Food Security" | "Social Justice" | "Poverty & Hunger" | "Public Distribution System" | "Economy" | "Environment" | "International Relations" | "Governance" | "Science & Tech" | "Security" | "Agriculture",
+    "tags": ["Tag1", "Tag2"], // strictly academic syllabus tags only, no parser/system logs or ingestion labels
     "readingTime": number, // estimated reading minutes
     "summary": {
-      "whatHappened": "Clear, objective, high-yield summary of the core news development.",
-      "background": "Historical, geographical, legal or structural context leading to this event.",
-      "whyImportant": "Strategic national or international impact, target reductions, investment figures or key milestones.",
-      "constitutionalLinks": "Strictly direct constitutional articles/Schedules. Enter 'N/A' or 'None direct' if none apply. DO NOT force-map.",
-      "internationalRelevance": "Strictly relevant international treaties/conventions. Enter 'N/A' or 'None direct' if none apply.",
-      "prelimsFacts": "• Fact bullet point 1\n• Fact bullet point 2\n• Fact bullet point 3",
-      "mainsAnalysis": "Mains application perspectives. Analyze core challenges, structural bottlenecks, or strategic benefits. Detail 3 arguments for and 3 counterarguments if applicable.",
-      "wayForward": "Actionable policy prescriptions, international models, or committee suggestions.",
-      "pyqLinkage": "Specific connection to previous years' questions (e.g. GS Paper III). Enter 'N/A' if none apply.",
-      "oneLineRevision": "A single-sentence maximum revision anchor for rapid memory retrieval right before the exam."
+      "detailedBrief": "DETAILED INTELLIGENCE BRIEF: Primary section containing deep context, real history, strategic significance, actual policy provisions, implementation challenges, geopolitical/economic repercussions, and exact exam syllabus relevance. Reads like premium UPSC editorial analysis. High density, zero filler.",
+      "prelimsFacts": "• QUICK PRELIMS FACTS point 1 (specify Ministry, launch year, scheme facts, target numbers, funding ratio, reports, committees, or legal definitions)\n• QUICK PRELIMS FACTS point 2\n• QUICK PRELIMS FACTS point 3 (Max 5-6 highly dense bullets. No generic metadata)",
+      "whyMatters": "WHY THIS MATTERS FOR UPSC: Very concise, bulleted or short mapping (e.g. GS II: Welfare schemes, food security; GS III: Fiscal policy). No empty paragraphs.",
+      "oneLineRevision": "ONE-LINE REVISION CORE: An elegant, high-retention revision anchor line for rapid recall. NOT a repeat of the headline.",
+      "officialSources": "OFFICIAL SOURCES: Bulleted list of official notification citations, ministry portals, PRS, RBI, PIB, or UN reports."
     },
     "mcq": {
-      "question": "UPSC prelims-style multiple choice question with multi-layered statement evaluation if possible, or high impact single question formulation.",
+      "question": "UPSC prelims-style multiple choice question with multi-layered statement evaluation if possible, or high-impact single question formulation.",
       "options": ["Option A", "Option B", "Option C", "Option D"], // Exactly four options
       "correctAnswer": 0, // 0-indexed integer corresponding to correct option (index 0 for A, 1 for B, etc.)
       "explanation": "Extremely thorough explanation detailing why the correct option is true and other options are false, with educational citations or constitutional notes."
@@ -2887,6 +3185,22 @@ async function processRawArticleThroughGemini(title: string, rawContent: string,
   });
 
   const analysisResult = JSON.parse(analysisRes.text.trim());
+
+  // Backwards compatibility injector to ensure database queries and existing UI code remains flawless
+  if (analysisResult.summary) {
+    if (!analysisResult.summary.whatHappened) {
+      analysisResult.summary.whatHappened = analysisResult.summary.detailedBrief || "";
+    }
+    if (!analysisResult.summary.whyImportant) {
+      analysisResult.summary.whyImportant = analysisResult.summary.whyMatters || "";
+    }
+    if (!analysisResult.summary.background) {
+      analysisResult.summary.background = "";
+    }
+    if (!analysisResult.summary.constitutionalLinks) {
+      analysisResult.summary.constitutionalLinks = "";
+    }
+  }
 
   // 4. SECONDARY AI VALIDATION STEP: Run verification layer to prevent leaks/force-fitting
   const verificationPrompt = `You are a strict Senior UPSC Academic Mentor and chief editor.
