@@ -117,8 +117,8 @@ export default function LearningPath({ token, onOpenArticle }: LearningPathProps
           <Compass className="w-5 h-5 text-[#0F766E] absolute animate-pulse" />
         </div>
         <div className="text-center space-y-1">
-          <h3 className="font-mono text-sm font-bold text-stone-750">Parsing Syllabus Performance Telemetry...</h3>
-          <p className="text-xs text-stone-400 max-w-xs font-mono">Consolidating bookmarks, MCQ accuracy indices, and active revision flashcards...</p>
+          <h3 className="font-sans text-sm font-bold text-stone-855">Preparing your custom learning path...</h3>
+          <p className="text-xs text-stone-500 max-w-xs font-sans">Consolidating bookmarks, MCQs, and revision cards...</p>
         </div>
       </div>
     );
@@ -126,17 +126,17 @@ export default function LearningPath({ token, onOpenArticle }: LearningPathProps
 
   if (error || !data) {
     return (
-      <div className="max-w-2xl mx-auto my-12 p-8 bg-white border border-stone-200 rounded-xl text-center space-y-4">
+      <div className="max-w-2xl mx-auto my-12 p-8 bg-white border border-stone-200 rounded-xl text-center space-y-4 font-sans">
         <AlertTriangle className="w-10 h-10 text-amber-600 mx-auto" />
-        <h3 className="text-lg font-serif text-stone-900">Telemetry Out of Sync</h3>
-        <p className="text-xs text-stone-505 leading-relaxed font-mono">
-          We experienced an error evaluating your syllabus records: {error}
+        <h3 className="text-lg font-bold text-stone-900">Unable to load path</h3>
+        <p className="text-xs text-stone-500 leading-relaxed font-sans">
+          We experienced an error loading your progress metrics: {error}
         </p>
         <button
           onClick={fetchPath}
-          className="inline-flex items-center gap-1.5 bg-[#1C1816] hover:bg-stone-850 text-white font-mono text-xs font-bold px-4 py-2 rounded-lg cursor-pointer transition"
+          className="inline-flex items-center gap-1.5 bg-[#1C1816] hover:bg-stone-850 text-white text-xs font-bold px-4 py-2 rounded-lg cursor-pointer transition"
         >
-          <RotateCw className="w-3.5 h-3.5" /> Reconnect Database
+          <RotateCw className="w-3.5 h-3.5" /> Retry
         </button>
       </div>
     );

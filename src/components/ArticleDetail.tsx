@@ -93,14 +93,14 @@ export default function ArticleDetail({
   return (
     <div 
       id="article-detail-sheet-backdrop" 
-      className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-md flex justify-end animate-fade-in"
+      className="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
         id="article-detail-drawer" 
-        className="w-full max-w-2xl bg-[#FAF9F5] h-full shadow-2xl flex flex-col overflow-y-auto relative border-l border-stone-200/40 select-none selection:bg-teal-50/50"
+        className="w-full max-w-3xl bg-[#FAF9F5] rounded-xl shadow-2xl max-h-[92vh] flex flex-col overflow-y-auto relative border border-stone-200/60 selection:bg-teal-50/50"
       >
         {/* Absolute close button */}
         <button
@@ -113,12 +113,12 @@ export default function ArticleDetail({
         </button>
 
         {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+          <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-24">
             <span className="animate-spin text-[#0F766E] font-mono text-xl">↺</span>
             <p className="text-xs text-stone-400 font-mono">Consolidating syllabus structures...</p>
           </div>
         ) : (
-          <div className="p-8 md:p-12 space-y-9 max-w-2xl mx-auto flex-1 w-full text-stone-900">
+          <div className="p-6 md:p-12 space-y-9 max-w-2xl mx-auto flex-1 w-full text-stone-900">
             
             {/* Title block */}
             <div className="space-y-4">
@@ -189,25 +189,25 @@ export default function ArticleDetail({
             {/* Dynamic UPSC intelligence brief */}
             <div className="space-y-8 pt-2 font-serif text-[#292524] text-[13.5px] leading-relaxed">
               
-              {/* Intelligence Brief */}
+              {/* Summary */}
               <div className="space-y-2">
-                <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Intelligence Brief</h3>
+                <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Summary</h3>
                 <div className="whitespace-pre-wrap text-[#44403C]">
                   {detailedBrief}
                 </div>
               </div>
 
-              {/* Key Prelims Facts */}
+              {/* Key Facts */}
               <div className="space-y-2">
-                <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Key Prelims Facts</h3>
+                <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Key Facts</h3>
                 <div className="pl-4 border-l-2 border-stone-200 whitespace-pre-wrap text-[#44403C]">
                   {prelimsFacts}
                 </div>
               </div>
 
-              {/* Why This Matters for UPSC */}
+              {/* Why It Matters */}
               <div className="space-y-2">
-                <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Why This Matters for UPSC</h3>
+                <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Why It Matters</h3>
                 <div className="whitespace-pre-wrap text-[#44403C]">
                   {whyMatters}
                 </div>
@@ -221,9 +221,9 @@ export default function ArticleDetail({
                 </div>
               </div>
 
-              {/* Official Sources */}
+              {/* Official Source */}
               <div className="space-y-2">
-                <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Official Sources</h3>
+                <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Official Source</h3>
                 <div className="text-xs text-stone-500 font-sans leading-relaxed whitespace-pre-wrap">
                   {officialSourcesList}
                 </div>

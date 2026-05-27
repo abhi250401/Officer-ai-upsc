@@ -754,8 +754,8 @@ export default function App() {
     setAuthLoading(true);
     try {
       // Direct Unified Google Sign In integration mapping
-      const targetEmail = authEmail || "google.aspirant@lbsnaa.gov.in";
-      const targetName = authName || "Officer Trainee";
+      const targetEmail = authEmail || "guest.user@example.com";
+      const targetName = authName || "Guest User";
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -787,8 +787,8 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: 'officer.trainee@lbsnaa.gov.in',
-          name: 'Officer Trainee (IAS Sandbox)',
+          email: 'guest.premium@example.com',
+          name: 'Guest User',
           password: 'sandbox_passcode_2026',
           method: 'Instant Sandbox'
         })
@@ -800,7 +800,7 @@ export default function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: 'officer.trainee@lbsnaa.gov.in',
+            email: 'guest.premium@example.com',
             password: 'sandbox_passcode_2026'
           })
         });
@@ -2289,411 +2289,34 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 6: PREMIUM ADMIN INGESTION PORTAL */}
+        {/* TAB 6: PREMIUM ADMIN OPERATIONS PORTAL */}
         {currentTab === 'admin' && (
-          <div id="view-admin-dashboard" className="space-y-4">
-            <div className="bg-[#1C1917] text-white p-4 rounded-xl space-y-2 relative overflow-hidden shadow-md">
-              <div className="absolute right-0 bottom-0 opacity-10 font-bold font-mono text-3xl translate-y-3 translate-x-3">PORTAL</div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-teal-400 font-mono">
-                System Command & Feed Administration
-              </h2>
-              <p className="text-xs text-stone-300">
-                Trigger active scraping or run Gemini-assisted structural mapping. Configure ingestion channels and evaluate system status logs.
-              </p>
-            </div>
-
-            {/* 📊 UPSC SYLLABUS ANALYTICS DASHBOARD */}
-            <div id="analytics-overview-dashboard" className="bg-white border border-[#E7E5E4] rounded-xl p-4 shadow-xs space-y-4">
-              <div className="border-b border-[#F5F5F4] pb-2.5 flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#1C1917] flex items-center gap-1">
-                    📊 UPSC Syllabus Preparation Analytics
-                  </h3>
-                  <p className="text-[10px] text-[#78716C]">
-                    Real-time tracking of aspirant keyword focus, syllabus views, and daily active study retention metrics.
-                  </p>
-                </div>
-                {loadingAnalytics && <span className="text-[9px] font-mono text-teal-700 bg-teal-50 px-2 py-0.5 rounded animate-pulse">Syncing...</span>}
-              </div>
-
-              {/* KPI Cards Row */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                <div className="bg-[#FAFAF9] border border-[#E7E5E4] rounded-lg p-2.5 text-center">
-                  <p className="text-[9px] font-mono font-bold text-[#78716C] uppercase">Daily Active Study Hits</p>
-                  <p className="text-lg font-bold font-display text-stone-900 mt-1">
-                    {analyticsData?.userRetention || 28}
-                  </p>
-                  <span className="text-[8px] text-teal-700 font-mono">● LIVE DAUs</span>
-                </div>
-
-                <div className="bg-[#FAFAF9] border border-[#E7E5E4] rounded-lg p-2.5 text-center">
-                  <p className="text-[9px] font-mono font-bold text-[#78716C] uppercase">Syllabus MCQ Solves</p>
-                  <p className="text-lg font-bold font-display text-stone-900 mt-1">
-                    {analyticsData?.totalMCQsAnswered || 64}
-                  </p>
-                  <span className="text-[8px] text-teal-700 font-mono">Active evaluation</span>
-                </div>
-
-                <div className="bg-[#FAFAF9] border border-[#E7E5E4] rounded-lg p-2.5 text-center">
-                  <p className="text-[9px] font-mono font-bold text-[#78716C] uppercase">Ingested Civil Notes</p>
-                  <p className="text-lg font-bold font-display text-stone-900 mt-1">
-                    {articles.length}
-                  </p>
-                  <span className="text-[8px] text-stone-500 font-mono">Syllabus segments</span>
-                </div>
-
-                <div className="bg-[#FAFAF9] border border-[#E7E5E4] rounded-lg p-2.5 text-center">
-                  <p className="text-[9px] font-mono font-bold text-[#78716C] uppercase">Personal Revision Notes</p>
-                  <p className="text-lg font-bold font-display text-stone-900 mt-1">
-                    {revisionCards.length}
-                  </p>
-                  <span className="text-[8px] text-stone-500 font-mono">Retention standard</span>
-                </div>
-              </div>
-
-              {/* Heatmaps columns */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                {/* Search Term Hotspots */}
-                <div className="border border-[#E7E5E4] bg-[#FAFAF9] rounded-lg p-3 space-y-2.5">
-                  <h4 className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1C1917]">🔥 High-Interest Search Hotspots</h4>
-                  <div className="flex flex-wrap gap-1.5 min-h-[60px] content-start">
-                    {analyticsData?.topSearched && Object.keys(analyticsData.topSearched).length > 0 ? (
-                      Object.entries(analyticsData.topSearched).map(([term, count]: any) => (
-                        <span key={term} className="bg-white border border-[#E7E5E4] text-[10.5px] font-mono font-bold px-2 py-1 rounded text-stone-800 shadow-3xs">
-                          {term} <span className="text-teal-700 bg-teal-50 px-1 py-0.2 rounded text-[9px] ml-0.5">+{count}</span>
-                        </span>
-                      ))
-                    ) : (
-                      ['Paris Agreement', 'DPDP Act', 'PM-PRANAM', 'Green Hydrogen', 'ISRO'].map((term) => (
-                        <span key={term} className="bg-white border border-[#E7E5E4] text-[10.5px] font-mono px-2 py-1 rounded text-stone-500">
-                          {term} <span className="text-stone-400 text-[8.5px]">(calc)</span>
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Category Views Map */}
-                <div className="border border-[#E7E5E4] bg-[#FAFAF9] rounded-lg p-3 space-y-2">
-                  <h4 className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1C1917]">📐 Syllabus Focus Engagement Ratio</h4>
-                  <div className="space-y-1.5">
-                    {(() => {
-                      const categoriesRatio = analyticsData?.topCategoryViews || {
-                        "Economy": 14,
-                        "Environment": 19,
-                        "Governance": 11,
-                        "International Relations": 8,
-                        "Science & Tech": 12
-                      };
-                      const maxVal = Math.max(...Object.values(categoriesRatio) as number[], 1);
-                      return Object.entries(categoriesRatio).map(([cat, count]: any) => {
-                        const scorePct = Math.round((count / maxVal) * 100);
-                        return (
-                          <div key={cat} className="space-y-0.5">
-                            <div className="flex justify-between text-[9.5px] font-mono">
-                              <span className="font-semibold text-stone-700">{cat}</span>
-                              <span className="text-[#0F766E] font-bold">{count} view ticks</span>
-                            </div>
-                            <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-[#0F766E] h-1.5 rounded-full" style={{ width: `${scorePct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Ingestion triggers panels */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white border border-[#E7E5E4] rounded-lg p-3 shadow-xs space-y-3">
-                <h3 className="text-xs font-bold text-[#1C1917] border-b border-[#F5F5F4] pb-1.5 flex items-center gap-1">
-                  <Cpu className="w-3.5 h-3.5 text-[#0F766E]" /> Ingestion Trigger
-                </h3>
-                <p className="text-[11px] text-[#78716C]">
-                  Downloads policy updates from PIB RSS feeds, cleans text, excludes low scoring drafts and generates structural templates using <strong>Active Gemini 3.5 Flash Model</strong>.
-                </p>
-
-                <button
-                  id="btn-admin-trigger-ingestion"
-                  disabled={ingestionInProgress}
-                  onClick={handleTriggerIngest}
-                  className="w-full bg-[#0F766E] text-white text-xs font-bold py-2.5 px-4 rounded-md shadow-sm transition hover:bg-[#115E59] disabled:opacity-55 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {ingestionInProgress ? (
-                    <>
-                      <RotateCw className="w-4 h-4 animate-spin text-white" />
-                      <span>Parsing & Analyzing Feed...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Compass className="w-4 h-4 text-white" />
-                      <span>Scrape & Ingest Active Models</span>
-                    </>
-                  )}
-                </button>
-
-                {ingestionMessage && (
-                  <div className="text-xs block bg-emerald-50 border border-emerald-200 text-stone-900 p-2.5 rounded font-mono whitespace-pre-wrap">
-                    {ingestionMessage}
-                  </div>
-                )}
-              </div>
-
-              {/* Feed Source list */}
-              <div className="bg-white border border-[#E7E5E4] rounded-lg p-3 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-[#F5F5F4] pb-1.5">
-                  <h3 className="text-xs font-bold text-[#1C1917] flex items-center gap-1">
-                    <Layers className="w-3.5 h-3.5 text-[#0F766E]" /> Active Policy Outlets
-                  </h3>
-                  <span className="text-[10px] font-mono text-[#78716C] bg-stone-100 px-1.5 py-0.2 rounded font-bold">
-                    Count: {adminSources.length}
-                  </span>
-                </div>
-
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                  {adminSources.map((s) => (
-                    <div key={s.id} className="text-[11px] space-y-1 p-2 bg-[#FAFAF9] border border-[#E7E5E4] rounded hover:border-slate-300 transition-colors">
-                      <div className="flex items-center justify-between gap-1">
-                        <div className="flex items-center gap-1.5 truncate max-w-[65%]">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.lastStatus === 'SUCCESS' ? 'bg-emerald-500 animate-pulse' : s.lastStatus === 'FAILED' ? 'bg-red-500' : 'bg-stone-300'}`} />
-                          <p className="font-bold text-[#1C1917] truncate">{s.name}</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[8px] text-[#78716C] font-mono bg-stone-100 px-1 py-0.2 rounded shrink-0">
-                            {s.type}
-                          </span>
-                          <span className={`text-[8px] font-bold border rounded px-1 shrink-0 ${getPriorityColor(s.priority)}`}>
-                            {s.priority}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-[9px] text-[#78716C] font-mono border-t border-dashed border-[#F5F5F4] pt-1">
-                        <span className="truncate max-w-[60%]" title={s.url}>{s.url}</span>
-                        {s.uptimeRate !== undefined && (
-                          <span className="font-bold text-emerald-800 shrink-0">
-                            Uptime: {s.uptimeRate}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Live Ingestion transparency dashboard panel */}
-            <div className="bg-white border border-[#E7E5E4] rounded-xl p-4 shadow-sm space-y-4 col-span-1 md:col-span-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#F5F5F4] pb-2.5 gap-2">
-                <div>
-                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#1C1917] flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    Live Ingestion Transparency Panel
-                  </h3>
-                  <p className="text-[10px] text-[#78716C]">
-                    Real-time status metrics of our automated UPSC intake engine. Powered by native MongoDB Atlas propagation.
-                  </p>
-                </div>
-                <button 
-                  onClick={fetchAdminDiagnostics}
-                  disabled={loadingDiagnostics}
-                  className="text-[10px] px-2 py-1 font-mono hover:bg-stone-100 border border-[#E7E5E4] rounded text-stone-700 font-bold self-start cursor-pointer transition"
-                >
-                  {loadingDiagnostics ? "Refreshing..." : "↺ Force Pull Feed Info"}
-                </button>
-              </div>
-
-              {adminDiagnostics ? (
-                <div className="space-y-4">
-                  {/* Status Metrics Cards */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    <div className="bg-stone-50 border border-stone-100 rounded-lg p-2.5">
-                      <span className="text-[9.5px] font-mono font-bold text-[#A8A29E] uppercase block">Running State</span>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="text-xs font-extrabold font-mono text-stone-800">AUTO REFRESH</span>
-                      </div>
-                    </div>
-                    <div className="bg-stone-50 border border-stone-100 rounded-lg p-2.5">
-                      <span className="text-[9.5px] font-mono font-bold text-[#A8A29E] uppercase block">Average Sync Latency</span>
-                      <p className="text-sm font-bold font-mono text-stone-800 mt-1">
-                        {adminDiagnostics.uptimeMetrics?.averageLatencyMs ? `${(adminDiagnostics.uptimeMetrics.averageLatencyMs / 1000).toFixed(2)}s` : "0.58s"}
-                      </p>
-                    </div>
-                    <div className="bg-stone-50 border border-stone-100 rounded-lg p-2.5">
-                      <span className="text-[9.5px] font-mono font-bold text-[#A8A29E] uppercase block">Rejection Ratio</span>
-                      <p className="text-sm font-bold font-mono text-stone-850 mt-1">
-                        {adminDiagnostics.uptimeMetrics?.rejectedCount || 0} Low-value items
-                      </p>
-                    </div>
-                    <div className="bg-stone-50 border border-stone-100 rounded-lg p-2.5">
-                      <span className="text-[9.5px] font-mono font-bold text-[#A8A29E] uppercase block">Total Cycles Today</span>
-                      <p className="text-sm font-bold font-mono text-stone-800 mt-1">
-                        {adminDiagnostics.feedHealthMetrics?.length || 16} cycles run
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Feed Health table listing */}
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[10px] uppercase font-bold text-[#78716C] tracking-wide block">📡 Feed Health Uptime Integrity Check</span>
-                    <div className="border border-[#E7E5E4] rounded-lg overflow-x-auto bg-white">
-                      <table className="w-full text-left border-collapse text-[11px] font-mono min-w-[500px]">
-                        <thead>
-                          <tr className="bg-[#FAFAF9] text-stone-600 font-bold border-b border-[#E7E5E4]">
-                            <th className="p-2">Feed Name</th>
-                            <th className="p-2 text-center">Uptime Rate</th>
-                            <th className="p-2 text-center">Last Ingest Success</th>
-                            <th className="p-2 text-right">Failure Count</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-stone-100">
-                          {adminDiagnostics.feedHealthMetrics?.map((f: any) => (
-                            <tr key={f.name} className="hover:bg-amber-50/10 transition">
-                              <td className="p-2 font-bold text-[#1C1917] max-w-[150px] truncate">{f.name}</td>
-                              <td className="p-2 text-center font-extrabold text-teal-850">{f.uptimeRate}%</td>
-                              <td className="p-2 text-center text-stone-500">
-                                {f.lastSuccessTime ? new Date(f.lastSuccessTime).toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'}) : 'Never'}
-                              </td>
-                              <td className={`p-2 text-right font-bold ${f.failures > 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                                {f.failures}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="py-6 flex justify-center text-xs text-[#78716C] font-mono">
-                  Diagnostics info loading from active MongoDB telemetry system...
-                </div>
-              )}
-            </div>
-
-            {/* MANUAL ADDITION BY ADMIN OVERRIDE FOR PLAYGROUND */}
-            <div className="bg-white border border-[#E7E5E4] rounded-lg p-3 shadow-xs space-y-3">
-              <button
-                id="btn-toggle-manual-add"
-                onClick={() => setShowManualAdd(!showManualAdd)}
-                className="w-full text-left text-xs font-bold text-[#1C1917] flex items-center justify-between focus:outline-none"
-              >
-                <span className="flex items-center gap-1">
-                  <Plus className="w-4 h-4 text-[#0F766E]" /> Override manual UPSC Ingestion (Direct AI summary drafting)
-                </span>
-                <span className="text-[10px] bg-stone-100 px-2 py-0.5 rounded font-mono text-stone-600">
-                  {showManualAdd ? 'Collapse' : 'Expand Form'}
-                </span>
-              </button>
-
-              {showManualAdd && (
-                <form id="form-manual-article-add" onSubmit={handleManualAddSubmit} className="space-y-3 pt-2.5 border-t border-[#F5F5F4] text-xs">
-                  <div className="space-y-1">
-                    <label className="font-bold text-[#44403C] block">Article Title</label>
-                    <input
-                      id="input-[newTitle]"
-                      type="text"
-                      required
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      placeholder="e.g. Cabinet launches Pradhan Mantri Matsya Sampada Yojana"
-                      className="w-full text-xs p-2 border border-[#E7E5E4] rounded text-[#1C1917] bg-[#FAFAF9]"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="font-bold text-[#44403C] block">Select Source</label>
-                      <select
-                        id="select-[newSource]"
-                        value={newSource}
-                        onChange={(e) => setNewSource(e.target.value)}
-                        className="w-full text-xs p-2 border border-[#E7E5E4] rounded text-[#1C1917] bg-[#FAFAF9]"
-                      >
-                        <option>PIB (Press Information Bureau)</option>
-                        <option>PRS Legislative Research</option>
-                        <option>NITI Aayog Updates</option>
-                        <option>Ministry of External Affairs</option>
-                        <option>UN News Global Feed</option>
-                        <option>The Hindu Editorial</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="font-bold text-[#44403C] block">Source Priority Weight</label>
-                      <select
-                        id="select-[newPriority]"
-                        value={newPriority}
-                        onChange={(e) => setNewPriority(e.target.value as any)}
-                        className="w-full text-xs p-2 border border-[#E7E5E4] rounded text-[#1C1917] bg-[#FAFAF9]"
-                      >
-                        <option value="VERY HIGH">VERY HIGH (pib, prs, etc)</option>
-                        <option value="HIGH">HIGH (mea, niti, etc)</option>
-                        <option value="MEDIUM">MEDIUM (un, who, news)</option>
-                        <option value="LOW">LOW (editorial, opinions)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-[#44403C] block">Draft Body Content (Clean article paragraphs)</label>
-                    <textarea
-                      id="textarea-[newContent]"
-                      rows={4}
-                      required
-                      value={newContent}
-                      onChange={(e) => setNewContent(e.target.value)}
-                      placeholder="Paste draft paragraph texts to let Gemini parse categories, sub-topics, constitutional list items, pyq link,Way Forward ideas and a standard prelims multiple choice selection..."
-                      className="w-full text-xs p-2 border border-[#E7E5E4] rounded text-[#1C1917] bg-[#FAFAF9]"
-                    />
-                  </div>
-
-                  <button
-                    id="submit-manual-article-btn"
-                    type="submit"
-                    className="bg-[#1C1917] hover:bg-[#2E2A27] text-white text-xs font-bold py-2 px-4 rounded transition cursor-pointer"
-                  >
-                    Ingest with Gemini Mapping
-                  </button>
-
-                  {newMsg && (
-                    <div id="manual-add-msg-box" className="text-xs p-2 bg-slate-100 text-stone-900 border rounded font-mono">
-                      {newMsg}
-                    </div>
-                  )}
-                </form>
-              )}
-            </div>
-
-            {/* Ingestion Logs */}
-            <div className="bg-white border border-[#E7E5E4] rounded-lg p-3 shadow-xs space-y-2">
-              <h3 className="text-xs font-bold text-[#1C1917] uppercase tracking-wider font-mono">System Ingestion Logs</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto font-mono text-[9px] pr-1">
-                {adminLogs.slice().reverse().map((log) => (
-                  <div key={log.id} className="p-2 border border-[#E7E5E4] rounded bg-[#FAFAF9] space-y-1 text-[#44403C]">
-                    <div className="flex items-center justify-between">
-                      <span className={`font-bold px-1.5 py-0.2 rounded text-[8px] ${log.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-900' : 'bg-rose-100 text-rose-900'}`}>
-                        {log.status}
-                      </span>
-                      <span className="text-[#A8A29E]">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                    </div>
-                    <p className="font-bold">{log.message}</p>
-                    <div className="flex space-x-3 text-[8px] text-[#78716C]">
-                      <span>Processed: {log.articlesProcessed}</span>
-                      <span>Ingested: {log.articlesIngested}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
+          <AdminPortal
+            articles={articles}
+            revisionCards={revisionCards}
+            analyticsData={analyticsData}
+            loadingAnalytics={loadingAnalytics}
+            adminSources={adminSources}
+            ingestionInProgress={ingestionInProgress}
+            ingestionMessage={ingestionMessage}
+            onTriggerIngest={handleTriggerIngest}
+            adminDiagnostics={adminDiagnostics}
+            loadingDiagnostics={loadingDiagnostics}
+            onFetchDiagnostics={fetchAdminDiagnostics}
+            showManualAdd={showManualAdd}
+            setShowManualAdd={setShowManualAdd}
+            newTitle={newTitle}
+            setNewTitle={setNewTitle}
+            newContent={newContent}
+            setNewContent={setNewContent}
+            newSource={newSource}
+            setNewSource={setNewSource}
+            newPriority={newPriority}
+            setNewPriority={setNewPriority}
+            newMsg={newMsg}
+            onManualAddSubmit={handleManualAddSubmit}
+            adminLogs={adminLogs}
+          />
         )}
 
       {/* ==========================================
@@ -3029,10 +2652,10 @@ export default function App() {
           <div className="border-b border-stone-200/50 p-5 flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-[10px] font-mono font-semibold tracking-widest text-[#0F766E] uppercase block">
-                Access Gateway
+                Welcome
               </span>
               <h4 className="font-display text-lg font-bold text-stone-900">
-                {authMode === 'login' ? 'Sign In to Workspace' : 'Create Trainee Profile'}
+                {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
               </h4>
             </div>
             <button
@@ -3049,14 +2672,14 @@ export default function App() {
           <div className="p-5 space-y-4">
             {/* Direct Sandbox Access Button to completely bypass signups */}
             <div className="bg-teal-50/60 border border-teal-100 p-3 rounded-xl text-center space-y-1.5 flex flex-col items-center">
-              <p className="text-[11px] text-teal-850 font-medium text-center">Bypass registration and check out the feed instantly!</p>
+              <p className="text-[11px] text-teal-850 font-medium text-center">Bypass registration to preview the platform instantly.</p>
               <button
                 type="button"
                 onClick={handleQuickDemoLogin}
                 disabled={authLoading}
                 className="w-full bg-[#0F766E] hover:bg-teal-800 text-white text-xs font-semibold py-2 px-3 rounded-lg transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <span>⚡ Instant Candidate Entry</span>
+                <span>⚡ Continue as Guest</span>
               </button>
             </div>
 
@@ -3081,12 +2704,12 @@ export default function App() {
               {/* Onboard Details when Registering */}
               {authMode === 'register' && (
                 <div className="space-y-1">
-                  <label className="text-[9.5px] font-mono font-semibold text-stone-500 uppercase tracking-wider block">Candidate Full Name</label>
+                  <label className="text-[9.5px] font-mono font-semibold text-stone-500 uppercase tracking-wider block">Full Name</label>
                   <input
                     id="auth-name-input"
                     type="text"
                     required
-                    placeholder="Abhishek Sen, IAS"
+                    placeholder="Abhishek Sen"
                     value={authName}
                     onChange={(e) => setAuthName(e.target.value)}
                     className="w-full text-xs p-2.5 border border-stone-200 rounded-lg focus:outline-none focus:border-[#0F766E] bg-white font-medium"
@@ -3097,13 +2720,13 @@ export default function App() {
               {/* standard credentials email */}
               <div className="space-y-1">
                 <label className="text-[9.5px] font-mono font-semibold text-stone-500 uppercase tracking-wider block">
-                  Cabinet Email ID
+                  Email Address
                 </label>
                 <input
                   id="auth-email-input"
                   type="email"
                   required
-                  placeholder="trainee@nic.in"
+                  placeholder="abhishek@example.com"
                   value={authEmail}
                   onChange={(e) => setAuthEmail(e.target.value)}
                   className="w-full text-xs p-2.5 border border-stone-200 rounded-lg focus:outline-none focus:border-[#0F766E] bg-white font-medium"
@@ -3112,7 +2735,7 @@ export default function App() {
 
               {/* Standard Password input section */}
               <div className="space-y-1">
-                <label className="text-[9.5px] font-mono font-semibold text-stone-500 uppercase tracking-wider block">Access Key Code</label>
+                <label className="text-[9.5px] font-mono font-semibold text-stone-500 uppercase tracking-wider block">Password</label>
                 <input
                   id="auth-password-input"
                   type="password"
@@ -3132,7 +2755,7 @@ export default function App() {
               >
                 {authLoading 
                   ? 'Verifying Credentials...' 
-                  : authMode === 'login' ? 'Access Candidate Account' : 'Initialize Trainee Profile'
+                  : authMode === 'login' ? 'Sign In' : 'Create Account'
                 }
               </button>
             </form>

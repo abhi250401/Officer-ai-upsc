@@ -33,6 +33,7 @@ interface AdminPortalProps {
   setNewPriority: (p: 'VERY HIGH' | 'HIGH' | 'MEDIUM' | 'LOW') => void;
   newMsg: string;
   onManualAddSubmit: (e: React.FormEvent) => void;
+  adminLogs: IngestionLog[];
 }
 
 export default function AdminPortal({
@@ -58,7 +59,8 @@ export default function AdminPortal({
   newPriority,
   setNewPriority,
   newMsg,
-  onManualAddSubmit
+  onManualAddSubmit,
+  adminLogs
 }: AdminPortalProps) {
   const getPriorityColor = (prio: string) => {
     switch (prio) {
@@ -77,11 +79,11 @@ export default function AdminPortal({
     <div id="view-admin-dashboard" className="space-y-6">
       <div className="bg-stone-900 text-white p-5 rounded-xl space-y-2 relative overflow-hidden shadow-sm">
         <div className="absolute right-0 bottom-0 opacity-10 font-bold font-mono text-3xl translate-y-3 translate-x-3">PORTAL</div>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-teal-400 font-mono">
-          System Command & Feed Administration
+        <h2 className="text-sm font-bold uppercase tracking-wider text-teal-400 font-sans">
+          Editorial Operations & Source Outlets
         </h2>
         <p className="text-xs text-stone-300 max-w-xl">
-          Trigger micro-crawlers across Ministry archives, evaluate sync latency dashboards, configure active pipelines and test raw text parsing configurations.
+          Update policy study feeds, verify source connections, and add new official reference sources.
         </p>
       </div>
 
@@ -90,10 +92,10 @@ export default function AdminPortal({
         <div className="border-b border-stone-150 pb-3 flex items-center justify-between">
           <div>
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-stone-900 flex items-center gap-1">
-              📊 UPSC Syllabus Focus Engine Metrics
+              📊 Editorial Study Analytics
             </h3>
             <p className="text-[10px] text-stone-500">
-              Real-time monitoring of syllabus coverage metrics, solves data retention and user activity indicators.
+              Review prep engagement metrics, MCQ practice activity, and reference notes.
             </p>
           </div>
           {loadingAnalytics && (
@@ -106,11 +108,11 @@ export default function AdminPortal({
         {/* KPI Cards Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-stone-50 border border-stone-200/55 rounded-lg p-3 text-center">
-            <p className="text-[9px] font-mono font-bold text-stone-500 uppercase tracking-tight">Active Student Hits</p>
+            <p className="text-[9px] font-mono font-bold text-stone-500 uppercase tracking-tight">Active Student Sessions</p>
             <p className="text-xl font-bold font-display text-stone-900 mt-1">
               {analyticsData?.userRetention || 28}
             </p>
-            <span className="text-[8px] text-teal-700 font-mono font-extrabold uppercase mt-0.5 inline-block">● Real-time sync</span>
+            <span className="text-[8px] text-teal-700 font-mono font-extrabold uppercase mt-0.5 inline-block">● Connected</span>
           </div>
 
           <div className="bg-stone-50 border border-stone-200/55 rounded-lg p-3 text-center">
@@ -118,11 +120,11 @@ export default function AdminPortal({
             <p className="text-xl font-bold font-display text-stone-900 mt-1">
               {analyticsData?.totalMCQsAnswered || 64}
             </p>
-            <span className="text-[8px] text-teal-750 font-mono mt-0.5 inline-block">Active sessions</span>
+            <span className="text-[8px] text-[#0F766E] font-mono mt-0.5 inline-block">Active sessions</span>
           </div>
 
           <div className="bg-stone-50 border border-stone-200/55 rounded-lg p-3 text-center">
-            <p className="text-[9px] font-mono font-bold text-stone-500 uppercase tracking-tight">Ingested Civil Notes</p>
+            <p className="text-[9px] font-mono font-bold text-stone-500 uppercase tracking-tight">Briefings Published</p>
             <p className="text-xl font-bold font-display text-stone-900 mt-1">
               {articles.length}
             </p>
@@ -197,10 +199,10 @@ export default function AdminPortal({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white border border-stone-200/60 rounded-lg p-4 shadow-3xs space-y-3 font-sans">
           <h3 className="text-xs font-bold text-stone-900 border-b border-stone-150 pb-2 flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-teal-850" /> Live Ingest triggers
+            <Cpu className="w-4 h-4 text-teal-850" /> Source Update Triggers
           </h3>
           <p className="text-[11px] text-stone-500 leading-relaxed">
-            Crawls active RSS links, parses articles, filters out short briefings and generates high-yield UPSC syllabus nodes using <strong>Gemini 3.5 Assistant Model</strong>.
+            Pulls from official RSS feeds and formats high-yield UPSC syllabus study points.
           </p>
 
           <button
@@ -212,12 +214,12 @@ export default function AdminPortal({
             {ingestionInProgress ? (
               <>
                 <RotateCw className="w-4 h-4 animate-spin text-white" />
-                <span>Running Parser...</span>
+                <span>Updating...</span>
               </>
             ) : (
               <>
                 <Compass className="w-4 h-4 text-white" />
-                <span>Crawlers: Trigger Now</span>
+                <span>Update Feed</span>
               </>
             )}
           </button>
@@ -232,7 +234,7 @@ export default function AdminPortal({
         {/* Feed Source list */}
         <div className="bg-white border border-stone-200/60 rounded-lg p-4 shadow-3xs space-y-3 font-sans">
           <div className="flex items-center justify-between border-b border-stone-150 pb-2">
-            <h3 className="text-xs font-bold text-stone-900 flex items-center gap-1.5 animate-pulse-slow">
+            <h3 className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-teal-800" /> Active Union Outlets
             </h3>
             <span className="text-[10px] font-mono text-stone-500 bg-stone-100 border px-1.5 py-0.2 rounded font-bold">
@@ -276,10 +278,10 @@ export default function AdminPortal({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-stone-150 pb-2.5 gap-2">
           <div>
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-stone-900 flex items-center gap-1.5">
-              ⚡ Live Server Ingestion Diagnostics Telemetry
+              ⚡ Editorial Connection Status
             </h3>
             <p className="text-[10px] text-stone-500">
-              Atlas sync telemetry diagnostics. Restricted from ordinary student lists.
+              Verify system connections, cache response latency, and check active registrations.
             </p>
           </div>
           <button 
@@ -287,7 +289,7 @@ export default function AdminPortal({
             disabled={loadingDiagnostics}
             className="text-[10px] px-2.5 py-1 font-mono bg-white hover:bg-stone-100 border border-stone-300 rounded text-stone-700 font-bold self-start cursor-pointer transition"
           >
-            {loadingDiagnostics ? "Scanning..." : "Update Live Telemetry"}
+            {loadingDiagnostics ? "Scanning..." : "Refresh Status"}
           </button>
         </div>
 
@@ -295,25 +297,25 @@ export default function AdminPortal({
           <div className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="bg-stone-50 border border-stone-150 p-2.5 rounded-lg">
-                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase block">Database Client</span>
-                <p className="text-xs font-extrabold font-mono text-stone-800 mt-1 uppercase">Mongo / JSON Cache</p>
+                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase block">Database Status</span>
+                <p className="text-xs font-extrabold font-mono text-stone-800 mt-1 uppercase">Connected</p>
               </div>
               <div className="bg-stone-50 border border-stone-150 p-2.5 rounded-lg">
-                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase block">Average Sync Latency</span>
-                <p className="text-xs font-extrabold font-mono text-stone-850 mt-1">
+                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase block">Average Response Latency</span>
+                <p className="text-xs font-extrabold font-mono text-stone-855 mt-1">
                   {adminDiagnostics.uptimeMetrics?.averageLatencyMs ? `${(adminDiagnostics.uptimeMetrics.averageLatencyMs / 1000).toFixed(2)}s` : "0.58s"}
                 </p>
               </div>
               <div className="bg-stone-50 border border-stone-150 p-2.5 rounded-lg">
-                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase block">Low-Value Skips</span>
+                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase block">Excluded Items</span>
                 <p className="text-xs font-extrabold font-mono text-stone-850 mt-1">
-                  {adminDiagnostics.uptimeMetrics?.rejectedCount || 0} feeds skipped
+                  {adminDiagnostics.uptimeMetrics?.rejectedCount || 0} items
                 </p>
               </div>
               <div className="bg-stone-50 border border-stone-150 p-2.5 rounded-lg">
-                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase block">Cycles Crawled</span>
+                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase block">Refresh Cycles</span>
                 <p className="text-xs font-extrabold font-mono text-stone-850 mt-1">
-                  {adminDiagnostics.feedHealthMetrics?.length || 18} cycles OK
+                  {adminDiagnostics.feedHealthMetrics?.length || 18} cycles
                 </p>
               </div>
             </div>
@@ -325,16 +327,16 @@ export default function AdminPortal({
                   <thead>
                     <tr className="bg-stone-105-half text-stone-700 font-extrabold border-b border-stone-200">
                       <th className="p-2">Union Archive Outlet ID</th>
-                      <th className="p-2 text-center">Uptime Rate</th>
+                      <th className="p-2 text-center">Connection Rate</th>
                       <th className="p-2 text-center">Sync Success Time</th>
-                      <th className="p-2 text-right">Error Counts</th>
+                      <th className="p-2 text-right">Errors</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100 font-sans">
                     {adminDiagnostics.feedHealthMetrics?.map((f: any) => (
                       <tr key={f.name} className="hover:bg-stone-50 font-medium">
                         <td className="p-2 font-mono font-bold text-stone-900 max-w-[180px] truncate">{f.name}</td>
-                        <td className="p-2 text-center font-mono font-extrabold text-teal-855">{f.uptimeRate}%</td>
+                        <td className="p-2 text-center font-mono font-extrabold text-teal-850">{f.uptimeRate}%</td>
                         <td className="p-2 text-center text-stone-500 font-mono text-[10px]">
                           {f.lastSuccessTime ? new Date(f.lastSuccessTime).toLocaleTimeString() : 'offline'}
                         </td>
@@ -348,9 +350,9 @@ export default function AdminPortal({
               </div>
             </div>
 
-            {/* Registered Student Directory (MongoDB ATLAS Connection Proof) */}
+            {/* Registered Student Directory */}
             <div className="space-y-2 border-t border-stone-100 pt-4">
-              <span className="text-[10px] uppercase font-mono font-bold text-stone-500 tracking-wide block">🗳 Registered Student Directory (Real-Time MongoDB Atlas Sync)</span>
+              <span className="text-[10px] uppercase font-mono font-bold text-stone-500 tracking-wide block">🗳 Registered Student Directory</span>
               <div className="border border-stone-200 rounded-lg overflow-x-auto bg-white shadow-3xs">
                 <table className="w-full text-left border-collapse text-[10.5px] font-mono min-w-[500px]">
                   <thead>
@@ -380,7 +382,7 @@ export default function AdminPortal({
                     ) : (
                       <tr>
                         <td colSpan={4} className="p-4 text-center text-stone-400 font-mono italic">
-                          No active candidates found in primary Atlas collections. Try creating a student profile.
+                          No active candidates found in primary collections. Try creating a student profile.
                         </td>
                       </tr>
                     )}
@@ -391,7 +393,7 @@ export default function AdminPortal({
           </div>
         ) : (
           <div className="py-4 text-center text-xs text-stone-400 font-mono">
-            Diagnostics data sync idle. Call check to trigger.
+            Connection status idle. Refresh to verify.
           </div>
         )}
       </div>
@@ -404,7 +406,7 @@ export default function AdminPortal({
           className="w-full text-left text-xs font-bold text-stone-900 flex items-center justify-between focus:outline-none cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <Plus className="w-4 h-4 text-teal-800 animate-pulse" /> Manual UPSC Ingestion Overrides (Direct AI drafting)
+            <Plus className="w-4 h-4 text-teal-800 animate-pulse" /> Manual Briefing Submissions
           </span>
           <span className="text-[9px] font-mono uppercase bg-stone-100 border px-2 py-0.5 rounded text-stone-600 font-extrabold">
             {showManualAdd ? 'Collapse' : 'Expand Arena'}
@@ -468,7 +470,7 @@ export default function AdminPortal({
                 required
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
-                placeholder="Paste raw notification paragraphs here. Gemini will organize: Prelims Snapshot lists, constitutional mapping links, Way Forward bullets and a practice GS MCQ..."
+                placeholder="Paste raw notification paragraphs here. The system will format: snapshots, core facts, and a practice GS MCQ..."
                 className="w-full text-xs p-3 border border-stone-200 rounded-md text-stone-950 bg-stone-50 focus:outline-none focus:ring-1 focus:ring-teal-700 font-sans leading-relaxed"
               />
             </div>
@@ -478,7 +480,7 @@ export default function AdminPortal({
               type="submit"
               className="bg-stone-950 hover:bg-stone-850 text-white text-xs font-mono font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg cursor-pointer transition"
             >
-              Parse & Ingest with Gemini
+              Format and Publish Briefing
             </button>
 
             {newMsg && (
@@ -489,6 +491,36 @@ export default function AdminPortal({
           </form>
         )}
       </div>
+
+      {/* System Update Logs */}
+      <div className="bg-white border border-[#E7E5E4] rounded-lg p-4 shadow-3xs space-y-3 font-sans">
+        <h3 className="text-xs font-bold text-[#1C1917] uppercase tracking-wider">System Update History</h3>
+        <p className="text-[10px] text-stone-500">
+          Verify prior connection runs, successful sync counts, and operation indicators. No raw programmatic references.
+        </p>
+        <div className="space-y-2 max-h-48 overflow-y-auto text-[10.5px] pr-1">
+          {adminLogs && adminLogs.length > 0 ? (
+            adminLogs.slice().reverse().map((log) => (
+              <div key={log.id} className="p-3 border border-stone-200/50 rounded-lg bg-[#FAFAF9] space-y-1.5 text-stone-800">
+                <div className="flex items-center justify-between">
+                  <span className={`font-mono font-extrabold px-1.5 py-0.2 rounded text-[8px] uppercase ${log.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+                    {log.status === 'SUCCESS' ? 'Active ✓' : 'Idle ✗'}
+                  </span>
+                  <span className="text-[#A8A29E] font-mono text-[9px]">{new Date(log.timestamp).toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit', second: '2-digit'})}</span>
+                </div>
+                <p className="font-semibold text-stone-900 text-xs">{log.message.replace(/ingest|crawl|scrape|ingestion/gi, 'sync')}</p>
+                <div className="flex space-x-3 text-[9px] text-[#78716C] font-mono font-bold">
+                  <span>Checked: {log.articlesProcessed}</span>
+                  <span>Synced: {log.articlesIngested}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-4 text-center text-stone-400 italic">No recent system updates run.</div>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }
