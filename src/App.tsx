@@ -2700,78 +2700,104 @@ export default function App() {
           ARTICLE BREAKDOWN ANALYSIS DETAIL SHEET (IFRAME CAPABLE INLAY)
          ========================================== */}
       {selectedArticleId && (
-        <div id="article-detail-sheet-modal" className="fixed inset-0 z-50 bg-[#1C1917]/70 backdrop-blur-xs flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-lg md:max-w-2xl rounded-t-2xl md:rounded-2xl max-h-[90vh] overflow-y-auto flex flex-col font-sans text-stone-900 text-xs border border-stone-200">
+        <ArticleDetail
+          article={selectedArticle}
+          loading={articleDetailLoading}
+          onClose={() => {
+            setSelectedArticleId(null);
+            setSelectedArticle(null);
+          }}
+          onToggleBookmark={handleToggleBookmark}
+          isBookmarked={bookmarks.some(b => b.id === selectedArticle?.id)}
+          userAnswers={userAnswers}
+          onAnswerMCQ={(mcqId, optionIndex) => {
+            setUserAnswers(prev => ({ ...prev, [mcqId]: optionIndex }));
+          }}
+          token={token}
+          revisionCards={revisionCards}
+          onSaveRevisionCard={handleSaveRevisionCard}
+          onSelectRelated={(articleId) => handleSelectArticle(articleId)}
+        />
+      )}
+      {false && selectedArticleId && (
+        <div id="article-detail-sheet-modal" className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-md flex items-end md:items-center justify-center p-0 md:p-6 animate-fade-in" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setSelectedArticleId(null);
+            setSelectedArticle(null);
+          }
+        }}>
+          <div className="bg-[#FAF9F5] w-full max-w-lg md:max-w-2xl rounded-t-2xl md:rounded-xl max-h-[92vh] overflow-y-auto flex flex-col font-sans text-stone-900 relative shadow-2xl border-0 selection:bg-teal-50">
             
-            {/* Modal sticky superior title Bar */}
-            <div className="sticky top-0 bg-white border-b border-[#E7E5E4] px-4 py-3 flex items-center justify-between z-10">
-              <div className="space-y-0.5">
-                <div className="flex items-center space-x-2">
-                  <span className="text-[10px] font-bold bg-[#FAFAF9] text-[#78716C] border px-2 py-0.5 rounded font-mono uppercase">
-                    {selectedArticle?.source}
-                  </span>
-                  {selectedArticle?.category && (
-                    <span className="text-[10px] font-mono font-bold text-teal-900 bg-teal-50 px-1.5 py-0.2 rounded">
-                      {selectedArticle.category}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button
-                id="btn-close-article-details"
-                onClick={() => {
-                  setSelectedArticleId(null);
-                  setSelectedArticle(null);
-                }}
-                className="text-stone-400 hover:text-stone-950 p-1.5 rounded-full hover:bg-[#FAFAF9] transition cursor-pointer font-bold font-mono text-base bg-stone-100 w-8 h-8 flex items-center justify-center"
-              >
-                &times;
-              </button>
-            </div>
+            {/* Absolute close button */}
+            <button
+              id="btn-close-article-details"
+              onClick={() => {
+                setSelectedArticleId(null);
+                setSelectedArticle(null);
+              }}
+              className="absolute top-5 right-5 text-stone-400 hover:text-stone-900 hover:bg-stone-100 transition rounded-full p-1.5 w-8 h-8 flex items-center justify-center cursor-pointer z-20 text-lg font-bold"
+              title="Close Reading View"
+            >
+              &times;
+            </button>
 
             {/* Article detailed parameters scroll area */}
             {articleDetailLoading ? (
-              <div className="py-24 text-center flex flex-col items-center justify-center space-y-2">
+              <div className="py-24 text-center flex flex-col items-center justify-center space-y-4">
                 <RotateCw className="w-8 h-8 text-[#0F766E] animate-spin" />
-                <p className="text-xs text-[#78716C] font-mono">Loading UPSC Analysis structures...</p>
+                <p className="text-xs text-[#78716C] font-mono tracking-wider">Consolidating editorial analysis...</p>
               </div>
             ) : selectedArticle ? (
-              <div className="p-4 space-y-4">
+              <div className="p-8 md:p-12 space-y-9 max-w-2xl mx-auto flex-1 w-full">
                 
                 {/* Title and stats headline */}
-                <div className="space-y-2 font-display">
-                  <h2 className="text-lg font-bold tracking-tight leading-snug text-[#1C1917]">
+                <div className="space-y-4">
+                  {selectedArticle.category && (
+                    <div className="text-[10px] font-mono font-bold tracking-widest text-[#0F766E] uppercase font-sans">
+                      {selectedArticle.category}
+                    </div>
+                  )}
+                  <h2 className="text-2xl md:text-3xl font-serif font-black tracking-tight leading-snug text-[#1C1917]">
                     {selectedArticle.title}
                   </h2>
-                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-[#78716C] font-mono">
-                    <span className="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.2 rounded">
-                      ⭐ UPSC Relevance Rating: {selectedArticle.relevanceScore}/10
-                    </span>
-                    <span>• {selectedArticle.readingTime} Min Consumption time</span>
-                    <span>• {new Date(selectedArticle.ingestionTimestamp).toLocaleDateString()}</span>
+                  
+                  {/* Clean Editorial Metadata Line */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-[#78716C] font-serif border-b border-stone-250 pb-4">
+                    <span className="font-sans font-semibold text-[#0F766E]">{selectedArticle.source}</span>
+                    <span>•</span>
+                    <span>{new Date(selectedArticle.ingestionTimestamp).toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"})}</span>
+                    <span>•</span>
+                    <span className="text-amber-800 font-semibold">{selectedArticle.relevanceScore}/10 Relevance</span>
+                    {selectedArticle.sourceLink && (
+                      <>
+                        <span>•</span>
+                        <a 
+                          href={selectedArticle.sourceLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[#0F766E] hover:underline hover:text-teal-800 transition font-sans font-medium"
+                        >
+                          Official Source ↗
+                        </a>
+                      </>
+                    )}
                   </div>
-                </div>
 
-                {/* 🚀 Social Share Actions Bar */}
-                <div id="social-share-row" className="bg-[#F5F4F0] p-2 rounded-lg border border-[#E7E5E4] flex flex-wrap items-center justify-between gap-2.5">
-                  <span className="text-[9.5px] font-mono font-bold uppercase text-[#78716C] tracking-wide flex items-center gap-1">
-                    📖 Syllabus Share Link
-                  </span>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {/* WhatsApp share */}
+                  {/* Subtle Secondary Share Bar */}
+                  <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-[#A8A29E] font-sans pt-1">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold">Share briefing:</span>
                     <button
                       onClick={() => {
                         const titleSlug = selectedArticle.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                         const shareUrl = `${window.location.origin}/article/${titleSlug}`;
-                        const text = encodeURIComponent(`📚 *UPSC Current Affairs Note*: \n*${selectedArticle.title}*\n⭐ Relevance Score: ${selectedArticle.relevanceScore}/10 | Syllabus focus: ${selectedArticle.category}\n\nRead the full high-yield dynamic syllabus analysis here:\n${shareUrl}`);
+                        const text = encodeURIComponent(`📚 *UPSC Note*: \n*${selectedArticle.title}*\nScore: ${selectedArticle.relevanceScore}/10\n\nRead here:\n${shareUrl}`);
                         window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
                       }}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-bold font-mono uppercase px-2 py-1 rounded cursor-pointer transition"
-                      title="Share to WhatsApp"
+                      className="text-stone-500 hover:text-emerald-700 font-medium transition cursor-pointer p-0 bg-transparent border-0"
                     >
                       WhatsApp
                     </button>
-                    {/* Telegram share */}
+                    <span>·</span>
                     <button
                       onClick={() => {
                         const titleSlug = selectedArticle.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -2779,205 +2805,118 @@ export default function App() {
                         const text = encodeURIComponent(`📚 UPSC Current Affairs Analysis: ${selectedArticle.title}`);
                         window.open(`https://t.me/share/url?url=${shareUrl}&text=${text}`, '_blank');
                       }}
-                      className="bg-sky-500 hover:bg-sky-600 text-white text-[9.5px] font-bold font-mono uppercase px-2 py-1 rounded cursor-pointer transition"
-                      title="Share to Telegram"
+                      className="text-stone-500 hover:text-[#0F766E] font-medium transition cursor-pointer p-0 bg-transparent border-0"
                     >
                       Telegram
                     </button>
-                    {/* Twitter/X Share */}
-                    <button
-                      onClick={() => {
-                        const titleSlug = selectedArticle.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                        const shareUrl = `${window.location.origin}/article/${titleSlug}`;
-                        const text = encodeURIComponent(`UPSC Current Affairs Analysis: ${selectedArticle.title} @officerai`);
-                        window.open(`https://twitter.com/intent/tweet?url=${shareUrl}&text=${text}`, '_blank');
-                      }}
-                      className="bg-stone-900 hover:bg-stone-950 text-white text-[9.5px] font-bold font-mono uppercase px-2 py-1 rounded cursor-pointer transition"
-                      title="Post to Twitter (X)"
-                    >
-                      X
-                    </button>
-                    {/* Copy Link */}
+                    <span>·</span>
                     <button
                       onClick={() => {
                         const titleSlug = selectedArticle.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                         const shareUrl = `${window.location.origin}/article/${titleSlug}`;
                         navigator.clipboard.writeText(shareUrl);
-                        alert("🔗 UPSC syllabus-friendly article link copied to clipboard!");
+                        alert("🔗 UPSC syllabus Note link copied to clipboard!");
                       }}
-                      className="bg-teal-700 hover:bg-teal-850 text-white text-[9.5px] font-bold font-mono uppercase px-2.5 py-1 rounded cursor-pointer transition"
-                      title="Copy canonical link"
+                      className="text-stone-500 hover:text-[#0F766E] font-medium transition cursor-pointer p-0 bg-transparent border-0"
                     >
-                      🔗 Copy
+                      Copy Link
                     </button>
                   </div>
                 </div>
 
-                {/* Tags group row */}
-                {selectedArticle.tags && selectedArticle.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {selectedArticle.tags.map((tg) => (
-                      <span key={tg} className="text-[9px] font-semibold bg-[#EEF2F6] text-[#44403C] px-2 py-0.5 rounded cursor-pointer hover:bg-stone-200">
-                        #{tg}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* DYNAMIC COMPACT SYLLABUS BREAKDOWN (NEW CLEAN HIGH-SIGNAL LAYOUT) */}
+                {/* Dynamic UPSC intelligence brief */}
                 {selectedArticle.summary ? (
-                  <div className="space-y-4 pt-1 font-sans">
+                  <div className="space-y-8 pt-2 font-serif text-[#292524] text-[13.5px] leading-relaxed">
                     
-                    {/* Section 1: Detailed Intelligence Brief */}
-                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
-                      <button
-                        onClick={() => toggleSection('whatHappened')}
-                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-stone-900 group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">01</span>
-                          <span>Detailed Intelligence Brief</span>
-                        </span>
-                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['whatHappened'] ? 'Collapse ▴' : 'Expand ▾'}
-                        </span>
-                      </button>
-                      {openSections['whatHappened'] && (
-                        <div className="mt-2 pl-7 text-[11.5px] text-[#44403C] leading-relaxed">
-                          <p className="whitespace-pre-wrap text-[#1C1917]">
-                            {selectedArticle.summary.detailedBrief || selectedArticle.summary.whatHappened}
-                          </p>
-                        </div>
-                      )}
+                    {/* Intelligence Brief */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Intelligence Brief</h3>
+                      <div className="whitespace-pre-wrap text-[#44403C]">
+                        {selectedArticle.summary.detailedBrief || selectedArticle.summary.whatHappened}
+                      </div>
                     </div>
 
-                    {/* Section 2: Key Prelims Facts */}
-                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
-                      <button
-                        onClick={() => toggleSection('prelimsSnapshot')}
-                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-[#1C1917] group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">02</span>
-                          <span>Key Prelims Facts</span>
-                        </span>
-                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['prelimsSnapshot'] ? 'Collapse ▴' : 'Expand ▾'}
-                        </span>
-                      </button>
-                      {openSections['prelimsSnapshot'] && (
-                        <div className="mt-2 pl-7 text-[11.5px] text-[#44403C] leading-relaxed">
-                          <p className="whitespace-pre-wrap font-serif text-[#1C1917] bg-[#FAFAF9] border border-[#E7E5E4] p-3 rounded-lg leading-loose">
-                            {selectedArticle.summary.prelimsFacts}
-                          </p>
-                        </div>
-                      )}
+                    {/* Key Prelims Facts */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Key Prelims Facts</h3>
+                      <div className="pl-4 border-l-2 border-stone-200 whitespace-pre-wrap text-[#44403C]">
+                        {selectedArticle.summary.prelimsFacts}
+                      </div>
                     </div>
 
-                    {/* Section 3: Why This Matters for UPSC */}
-                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
-                      <button
-                        onClick={() => toggleSection('whyImportant')}
-                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-stone-900 group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">03</span>
-                          <span>Why This Matters for UPSC</span>
-                        </span>
-                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['whyImportant'] ? 'Collapse ▴' : 'Expand ▾'}
-                        </span>
-                      </button>
-                      {openSections['whyImportant'] && (
-                        <div className="mt-2 pl-7 text-[11.5px] text-[#44403C] leading-relaxed">
-                          <p className="font-medium text-[#1C1917] bg-stone-900 text-stone-100 p-3 rounded-lg">
-                            {selectedArticle.summary.whyMatters || selectedArticle.summary.whyImportant}
-                          </p>
-                        </div>
-                      )}
+                    {/* Why This Matters for UPSC */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Why This Matters for UPSC</h3>
+                      <div className="whitespace-pre-wrap text-[#44403C]">
+                        {selectedArticle.summary.whyMatters || selectedArticle.summary.whyImportant}
+                      </div>
                     </div>
 
-                    {/* Section 4: One-Line Revision Core */}
-                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
-                      <button
-                        onClick={() => toggleSection('oneLineRevision')}
-                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-[#1C1917] group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">04</span>
-                          <span>One-Line Revision Core</span>
-                        </span>
-                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['oneLineRevision'] ? 'Collapse ▴' : 'Expand ▾'}
-                        </span>
-                      </button>
-                      {openSections['oneLineRevision'] && (
-                        <div className="mt-2 pl-7 border-l-2 border-[#0F766E] py-1 bg-teal-50/20 p-2.5 rounded-r-lg">
-                          <p className="font-display italic text-xs text-[#0F172A] leading-relaxed">
-                            &ldquo;{selectedArticle.summary.oneLineRevision}&rdquo;
-                          </p>
-                        </div>
-                      )}
+                    {/* One-Line Revision */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">One-Line Revision</h3>
+                      <div className="italic text-stone-700 pl-4 border-l-2 border-[#0F766E]/70">
+                        &ldquo;{selectedArticle.summary.oneLineRevision}&rdquo;
+                      </div>
                     </div>
 
-                    {/* Section 5: Official Sources */}
-                    <div className="border-b border-[#F5F5F4] pb-3 last:border-0">
-                      <button
-                        onClick={() => toggleSection('pyqLinkage')}
-                        className="w-full flex items-center justify-between text-left py-1 text-[13px] font-sans font-bold text-stone-900 group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded">05</span>
-                          <span>Official Sources</span>
-                        </span>
-                        <span className="text-stone-400 group-hover:text-stone-700 transition-colors text-[10px]">
-                          {openSections['pyqLinkage'] ? 'Collapse ▴' : 'Expand ▾'}
-                        </span>
-                      </button>
-                      {openSections['pyqLinkage'] && (
-                        <div className="mt-2 pl-7 text-[11px] text-stone-700 font-mono bg-stone-50 p-2.5 rounded-lg whitespace-pre-wrap">
-                          {selectedArticle.summary.officialSources || "• Press Information Bureau (PIB)\n• Nodal Ministry Gazetted circulars"}
-                        </div>
-                      )}
+                    {/* Official Sources */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Official Sources</h3>
+                      <div className="text-xs text-stone-500 font-sans leading-relaxed whitespace-pre-wrap">
+                        {selectedArticle.summary.officialSources || "• Press Information Bureau (PIB)\n• Gazette of India Publications"}
+                      </div>
                     </div>
+
+                    {/* Related Topics / Tags */}
+                    {selectedArticle.tags && selectedArticle.tags.length > 0 && (
+                      <div className="pt-4 border-t border-stone-200/50 flex flex-wrap gap-2 items-center font-sans text-xs">
+                        <span className="text-[10.5px] font-medium text-stone-400">Related topics:</span>
+                        {selectedArticle.tags.map((tg: string) => (
+                          <span key={tg} className="text-[10.5px] text-[#0F766E] hover:underline cursor-pointer transition">
+                            #{tg}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                   </div>
                 ) : (
-                  <div className="border border-[#E7E5E4] rounded-lg p-5 text-stone-500 italic">
-                    AI Analysis template currently unavailable.
+                  <div className="text-stone-500 italic text-xs pt-4 font-serif">
+                    Editorial analysis currently unavailable.
                   </div>
                 )}
 
                 {/* UPSC PRELIMS MULTIPLE CHOICE PRACTICE BOX */}
                 {selectedArticle.mcq && (
-                  <div id="inline-mcq-box" className="p-3 bg-[#EEF2F6] border border-[#CDD8E0] rounded-xl space-y-3 pt-4">
-                    <div className="flex items-center justify-between border-b border-[#CDD8E0] pb-2">
-                      <span className="text-[11px] font-black text-blue-950 uppercase tracking-widest font-mono flex items-center gap-1.5">
-                        <FileCheck className="w-4 h-4 text-blue-900" /> Topic Practice: UPSC Standard MCQ
+                  <div id="inline-mcq-box" className="p-6 bg-[#FAFAF9] border border-stone-200/50 rounded-lg space-y-4 pt-5 mt-6 font-sans">
+                    <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                      <span className="text-xs font-bold text-[#1C1917] uppercase tracking-wider flex items-center gap-1.5 font-sans">
+                        <FileCheck className="w-4 h-4 text-[#0F766E]" /> Practice Assessment
                       </span>
-                      <span className="text-[10px] font-mono text-stone-500 bg-white px-2 py-0.5 rounded border border-stone-200">
-                        1 Mark Penalty applies in actual IAS
+                      <span className="text-[10px] text-stone-500">
+                        Standard UPSC formatting
                       </span>
                     </div>
 
-                    <p className="text-xs font-bold font-mono text-stone-900 whitespace-pre-wrap leading-relaxed">
+                    <p className="text-[13.5px] font-serif font-bold text-stone-900 whitespace-pre-wrap leading-relaxed">
                       {selectedArticle.mcq.question}
                     </p>
 
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="grid grid-cols-1 gap-2.5 pt-1">
                       {selectedArticle.mcq.options.map((opt: string, idx: number) => {
                         const hasAnswered = userAnswers[selectedArticle.mcq!.id] !== undefined;
                         const isSelected = userAnswers[selectedArticle.mcq!.id] === idx;
                         const isCorrect = selectedArticle.mcq!.correctAnswer === idx;
                         
-                        let optionClass = 'bg-white hover:bg-stone-50 text-stone-850';
+                        let optionClass = 'bg-white hover:bg-stone-50 text-stone-800 border-stone-200 hover:border-stone-300';
                         if (hasAnswered) {
                           if (isCorrect) {
-                            optionClass = 'bg-emerald-100 border-emerald-400 text-emerald-950 font-bold';
+                            optionClass = 'bg-emerald-50 border-emerald-300 text-emerald-950 font-semibold';
                           } else if (isSelected) {
-                            optionClass = 'bg-rose-100 border-rose-300 text-rose-950';
+                            optionClass = 'bg-rose-50 border-rose-200 text-rose-950';
                           } else {
-                            optionClass = 'bg-stone-100/50 text-stone-400 opacity-60';
+                            optionClass = 'bg-stone-100/40 text-stone-400 border-stone-100 opacity-60';
                           }
                         }
 
@@ -2987,23 +2926,23 @@ export default function App() {
                             id={`mcq-detail-option-${idx}`}
                             disabled={hasAnswered}
                             onClick={() => setUserAnswers(prev => ({ ...prev, [selectedArticle.mcq!.id]: idx }))}
-                            className={`w-full text-left text-xs p-2.5 rounded-lg border transition duration-150 flex items-start gap-2 cursor-pointer ${optionClass}`}
+                            className={`w-full text-left text-xs p-3 rounded-lg border transition duration-150 flex items-start gap-2.5 cursor-pointer ${optionClass}`}
                           >
-                            <span className="font-mono font-bold bg-stone-200 text-stone-900 px-1.5 py-0.2 rounded text-[10px] uppercase shrink-0">
+                            <span className="font-mono font-bold bg-stone-100 text-stone-700 px-1.5 py-0.2 rounded text-[10px] uppercase shrink-0">
                               {String.fromCharCode(65 + idx)}
                             </span>
-                            <span>{opt}</span>
+                            <span className="leading-relaxed">{opt}</span>
                           </button>
                         );
                       })}
                     </div>
 
                     {userAnswers[selectedArticle.mcq.id] !== undefined && (
-                      <div className="bg-white border border-[#CDD8E0] rounded-lg p-3 space-y-2 text-stone-900">
-                        <p className="font-bold text-xs text-blue-950 flex items-center gap-1">
-                          <Lightbulb className="w-4 h-4 text-amber-500 fill-current" /> Detailed Syllabus Citations & Explanations:
+                      <div className="bg-white border border-stone-200 rounded-lg p-4 space-y-2 text-stone-850">
+                        <p className="font-bold text-xs text-[#0F766E] flex items-center gap-1 uppercase tracking-wider font-sans">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 fill-amber-100" /> Explanation Details:
                         </p>
-                        <p className="text-xs leading-relaxed text-stone-700 whitespace-pre-wrap font-mono uppercase bg-stone-50 p-2 border border-stone-200 rounded text-[10.5px]">
+                        <p className="text-[12.5px] leading-relaxed text-[#44403C] font-serif">
                           {selectedArticle.mcq.explanation}
                         </p>
                       </div>
@@ -3013,21 +2952,21 @@ export default function App() {
 
                 {/* USER PERSONAL MNEMONICS / NOTES COMPILATION INLINE */}
                 {token && (
-                  <div className="bg-[#FAF9F5] border border-stone-200 rounded-lg p-3.5 space-y-2.5">
-                    <span className="text-[10px] font-bold text-stone-800 uppercase tracking-widest font-mono flex items-center gap-1">
-                       💡 Build Personal Synapses (Saves to Revision Mode)
+                  <div className="bg-[#FAFAF9] border border-stone-200/40 rounded-lg p-5 space-y-3 font-sans">
+                    <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1">
+                       💡 Personal study notes
                     </span>
-                    <p className="text-[10px] text-stone-600 block line-clamp-1">
+                    <p className="text-[11px] text-stone-500">
                       Compile static references (syllabus, reports, or GS index keys) linked to this material.
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 font-sans">
                       <input
                         id="input-inline-card-notes"
                         type="text"
                         placeholder="e.g. MNEMONIC: 'Urea cutPM-PRANAM save50'... Links Article 48 DPSP"
                         defaultValue={revisionCards.find(c => c.articleId === selectedArticle.id)?.notes || ''}
                         onBlur={(e) => handleSaveRevisionCard(selectedArticle.id, e.target.value)}
-                        className="flex-1 text-xs px-2.5 py-1.5 border border-stone-300 rounded bg-white text-stone-900 focus:outline-none focus:border-stone-950"
+                        className="flex-1 text-xs px-3 py-2 border border-stone-200 rounded-md bg-white text-[#1C1816] focus:outline-none focus:border-stone-400"
                       />
                       <button
                         id="btn-trigger-inline-save"
@@ -3035,7 +2974,7 @@ export default function App() {
                           const el = document.getElementById('input-inline-card-notes') as HTMLInputElement;
                           if (el) handleSaveRevisionCard(selectedArticle.id, el.value);
                         }}
-                        className="bg-[#1C1917] hover:bg-[#2E2A27] text-white text-xs font-bold py-1.5 px-3 rounded cursor-pointer"
+                        className="bg-[#1C1917] hover:bg-stone-850 text-white text-xs font-bold py-2 px-4 rounded-md cursor-pointer transition shrink-0"
                       >
                         Keep Notes
                       </button>
@@ -3045,19 +2984,19 @@ export default function App() {
 
                 {/* SATELLITE RELATED TOPICS LIST */}
                 {selectedArticle.relatedArticles && selectedArticle.relatedArticles.length > 0 && (
-                  <div className="space-y-2 border-t border-[#E7E5E4] pt-3">
-                    <span className="text-[10px] font-bold text-stone-600 uppercase tracking-widest font-mono block">Related UPSC Syllabus Connections</span>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <div className="space-y-3 border-t border-stone-200/60 pt-6 font-sans">
+                    <span className="text-xs font-bold text-stone-800 uppercase tracking-wider block">Connected Syllabus Topics</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {selectedArticle.relatedArticles.map((rel: any) => (
                         <div
                           key={rel.id}
                           id={`rel-item-${rel.id}`}
                           onClick={() => handleSelectArticle(rel.id)}
-                          className="bg-stone-50 border border-stone-200 hover:border-teal-700 p-2 rounded text-left transition cursor-pointer space-y-1 block text-xs"
+                          className="bg-white border border-stone-200/60 hover:border-stone-400 p-3.5 rounded-lg text-left transition cursor-pointer space-y-2 block text-xs"
                         >
-                          <span className="text-[8px] font-bold text-teal-800 bg-teal-50 px-1 py-0.2 rounded">{rel.category}</span>
-                          <h5 className="font-bold text-stone-950 truncate">{rel.title}</h5>
-                          <p className="text-[9px] text-[#78716C] line-clamp-1 italic">{rel.oneLineRevision}</p>
+                          <span className="text-[9px] font-bold text-[#0F766E] uppercase tracking-wider">{rel.category}</span>
+                          <h5 className="font-bold text-stone-900 line-clamp-2 leading-snug">{rel.title}</h5>
+                          <p className="text-[10px] text-[#78716C] line-clamp-1 italic">{rel.oneLineRevision}</p>
                         </div>
                       ))}
                     </div>
@@ -3066,9 +3005,9 @@ export default function App() {
 
                 {/* Source body reading references - ADMIN ONLY */}
                 {currentTab === 'admin' && (
-                  <div className="space-y-1 border-t border-[#E7E5E4] pt-3 text-[11px] bg-stone-100 p-3 rounded-lg">
+                  <div className="space-y-1 border-t border-stone-200 pt-4 text-[11px] bg-stone-50 p-4 rounded-lg font-sans">
                     <span className="font-bold text-stone-700 uppercase font-mono block">Raw Ingested Content Draft (Admin Monitor Only)</span>
-                    <p className="leading-relaxed text-stone-700 font-serif max-h-40 overflow-y-auto pr-1">
+                    <p className="leading-relaxed text-[#292524] font-serif max-h-40 overflow-y-auto pr-1">
                       {selectedArticle.content}
                     </p>
                   </div>

@@ -245,45 +245,36 @@ const initialArticles = [
   }
 ];
 
-function cleanRoboticJargon(text: string): string {
-  if (!text) return "";
-  let polished = text;
-  
-  // Clean up and discard typical generic AI boilerplate and forced governance/MBA jargon
-  const replacements: Record<string, string> = {
-    "institutional capability enhancement": "agency planning",
-    "procedural streamlining": "process simplification",
-    "framework alignment": "policy integration",
-    "developmental coordination": "strategic coordination",
-    "implementation bottlenecks": "delays",
-    "administrative synchronization": "regulatory harmony",
-    "state planning indicators": "developmental indices",
-    "capability assessment frameworks": "performance benchmarks",
-    "institutional strengthening": "capacity building",
-    "procedural reforms": "improvements",
-    "technology-first implementation": "digital service delivery",
-    "administrative streamlining": "process simplification",
-    "governance transparency": "accountability",
-    "structural review": "assessment",
-    "vibrant ecosystem": "productive environment",
-    "holistic approach": "strategy",
-    "structural capability": "capacity",
-    "administrative simplification": "simplification",
-    "synergistic frameworks": "cooperative systems",
-    "resource optimization": "budget planning"
-  };
-
-  for (const [key, val] of Object.entries(replacements)) {
-    const rx = new RegExp(key, "gi");
-    polished = polished.replace(rx, val);
-  }
-  return polished;
-}
-
 function deduplicateText(text: string): string {
   if (!text) return "";
-  
-  const lines = text.split("\n");
+
+  // 1. Remove/replace UPSC synthetic filler words and fake ministries
+  const fillerReplacements: [RegExp, string][] = [
+    [/governance transparency/gi, "accountability"],
+    [/structural capability/gi, "capacity"],
+    [/procedural streamlining/gi, "simplification"],
+    [/administrative synchronization/gi, "coordination"],
+    [/developmental ecosystem/gi, "infrastructure"],
+    [/strategic framework/gi, "policy"],
+    [/institutional strengthening/gi, "capacity building"],
+    [/strategic coordination/gi, "coordination"],
+    [/institutional capability/gi, "capacity"],
+    [/regulatory harmonization/gi, "uniformity"],
+    [/framework alignment/gi, "integration"],
+    [/implementation ecosystem/gi, "system"],
+    [/developmental trajectory/gi, "growth"],
+    [/Ministry of Governance/gi, "Ministry of Personnel, Public Grievances and Pensions"],
+    [/Strategic Administrative Framework/gi, "National Policy Guidelines"],
+    [/National Evaluation Metrics/gi, "standard performance criteria"]
+  ];
+
+  let polished = text;
+  for (const [regex, replacement] of fillerReplacements) {
+    polished = polished.replace(regex, replacement);
+  }
+
+  // 2. Perform paragraph and sentence level deduplication
+  const lines = polished.split("\n");
   const seenParagraphs = new Set<string>();
   const seenSentences = new Set<string>();
   const resultLines: string[] = [];
@@ -295,9 +286,9 @@ function deduplicateText(text: string): string {
       continue;
     }
 
-    // Header deduplication
+    // Heading deduplication
     const lower = trimmed.toLowerCase();
-    if (lower.includes("mains analytical") || lower.includes("background:") || lower.includes("context:") || lower.includes("way forward:") || lower.includes("detailed intelligence brief:")) {
+    if (lower.startsWith("detailed intelligence brief") || lower.startsWith("key prelims facts") || lower.startsWith("why this matters") || lower.startsWith("one-line revision") || lower.startsWith("official sources")) {
       const headingKey = "heading_" + lower.replace(/[^a-z0-9]/g, "");
       if (seenParagraphs.has(headingKey)) {
         continue;
@@ -305,13 +296,13 @@ function deduplicateText(text: string): string {
       seenParagraphs.add(headingKey);
     }
 
-    // Sentence-level deduplication inside paragraphs to check for runaway generator repeats
+    // Sentence-level deduplication
     const sentences = trimmed.split(/(?<=[.?!])\s+/);
     const uniqueSentences: string[] = [];
     for (const sentence of sentences) {
       const sTrim = sentence.trim();
       if (!sTrim) continue;
-      
+
       const normalizedSentence = sTrim.toLowerCase().replace(/[^a-z0-9]/g, "").substring(0, 100);
       if (seenSentences.has(normalizedSentence)) {
         continue;
@@ -331,63 +322,68 @@ function deduplicateText(text: string): string {
     }
   }
 
-  // Joint text, clean multiple empty lines
   let cleanedText = resultLines.filter((l, i, arr) => l !== "" || (i > 0 && arr[i-1] !== "")).join("\n").trim();
 
-  // Strict word count threshold: truncate to prevent runway AI filler
-  const words = cleanedText.split(/\s+/);
-  if (words.length > 600) {
-    cleanedText = words.slice(0, 500).join(" ") + "... [Abridged for High-Density Strategic Briefing]";
+  // Prune to maximum 5 bullet points if is a bulleted list
+  if (cleanedText.includes("•")) {
+    const rawLines = cleanedText.split("\n");
+    let bulletCount = 0;
+    const prunedLines = rawLines.map(l => {
+      if (l.trim().startsWith("•")) {
+        bulletCount++;
+        return bulletCount <= 5 ? l : "";
+      }
+      return l;
+    }).filter(l => l !== "");
+    cleanedText = prunedLines.join("\n");
   }
 
   return cleanedText;
 }
 
+function isHighlyRepetitive(text: string): boolean {
+  if (!text) return false;
+  const sentenceRegex = /(?<=[.?!])\s+/;
+  const sentences = text.split(sentenceRegex)
+    .map(s => s.trim().toLowerCase().replace(/[^a-z0-9]/g, ""))
+    .filter(s => s.length > 15);
+
+  if (sentences.length <= 1) return false;
+
+  const set = new Set(sentences);
+  const duplicateCount = sentences.length - set.size;
+  const duplicateRatio = duplicateCount / sentences.length;
+
+  if (duplicateRatio > 0.15 || duplicateCount >= 2) {
+    return true;
+  }
+  return false;
+}
+
 function sanitizeAndPolishUPSCArticle(article: any): any {
   if (!article) return article;
-  
+
   const copy = JSON.parse(JSON.stringify(article));
-  
+
   if (!copy.summary) {
     copy.summary = {};
   }
-  
-  // Extract or build a beautiful detailed intelligence brief with zero filler text
+
   let rawBrief = copy.summary.detailedBrief || copy.summary.whatHappened || copy.content || "";
-  
-  // If the article is legacy style and does not have the structured detailedBrief, assemble it ONCE
-  if (!copy.summary.detailedBrief) {
-    if (copy.summary.background && !rawBrief.includes(copy.summary.background)) {
-      rawBrief = rawBrief + "\n\n**Historical & Socio-Economic Context:**\n" + copy.summary.background;
-    }
-    if (copy.summary.mainsAnalysis && !rawBrief.includes(copy.summary.mainsAnalysis)) {
-      rawBrief = rawBrief + "\n\n**Mains Analytical Perspective:**\n" + copy.summary.mainsAnalysis;
-    }
-    if (copy.summary.wayForward && !rawBrief.includes(copy.summary.wayForward)) {
-      rawBrief = rawBrief + "\n\n**Substantive Policy Reforms & Action Outline:**\n" + copy.summary.wayForward;
-    }
-  }
-  
-  const detailedBrief = deduplicateText(cleanRoboticJargon(rawBrief));
-  
-  const prelimsFacts = deduplicateText(cleanRoboticJargon(
+
+  const detailedBrief = deduplicateText(rawBrief);
+  const prelimsFacts = deduplicateText(
     copy.summary.prelimsFacts || 
     "• Direct factual references and operational indicators under evaluation.\n• Central Ministry involvement and relevant timeline benchmarks."
-  ));
-  
-  const whyMatters = deduplicateText(cleanRoboticJargon(
+  );
+  const whyMatters = deduplicateText(
     copy.summary.whyMatters || 
     copy.summary.whyImportant || 
     `GS Paper Syllabus focus: ${copy.category || "Governance"}`
-  ));
-  
-  const oneLineRevision = deduplicateText(cleanRoboticJargon(
-    copy.summary.oneLineRevision || 
-    copy.title || 
-    ""
-  ));
+  );
+  const oneLineRevision = deduplicateText(copy.summary.oneLineRevision || copy.title || "");
 
-  let officialSources = deduplicateText(cleanRoboticJargon(copy.summary.officialSources || ""));
+  let officialSources = deduplicateText(copy.summary.officialSources || "");
   if (!officialSources) {
     const src = copy.source ? copy.source.toLowerCase() : "";
     if (src.includes("pib")) {
@@ -399,24 +395,37 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
     } else if (copy.category === "Environment") {
       officialSources = "• Ministry of Environment, Forest and Climate Change (MoEFCC) Directives\n• United Nations Climate Change Secretariat (UNFCCC) Agreements";
     } else {
-      officialSources = `• Official Gazette of India Publications\n• Nodal Department Circulars & Press Bulletins`;
+      officialSources = "• Official Gazette of India Publications\n• Nodal Department Circulars & Press Bulletins";
     }
   }
 
-  // Hard reset summary properties to prevent circular backward-compatible appends!
+  const briefWords = detailedBrief.split(/\s+/);
+  const cappedBrief = briefWords.length > 150 ? briefWords.slice(0, 130).join(" ") + "... [Abridged for factual high-density brevity]" : detailedBrief;
+
+  let tags = (copy.tags || []).filter((tg: string) => {
+    const lower = tg.toLowerCase();
+    return !["syllabus sync", "curated brief", "governance grid", "ai auto ingestion", "ai auto-ingestion", "general"].includes(lower);
+  });
+  if (tags.length > 2) {
+    tags = tags.slice(0, 2);
+  }
+  if (tags.length === 0) {
+    tags = [copy.category || "Governance"];
+  }
+
+  copy.tags = tags;
+
   copy.summary = {
-    detailedBrief,
+    detailedBrief: cappedBrief,
     prelimsFacts,
     whyMatters,
     oneLineRevision,
     officialSources,
-    
-    // Legacy support back-compat definitions
-    whatHappened: detailedBrief,
+
+    whatHappened: cappedBrief,
     whyImportant: whyMatters
   };
 
-  // Strip all legacy sections to completely murder the recursive loop
   delete copy.summary.background;
   delete copy.summary.mainsAnalysis;
   delete copy.summary.wayForward;
@@ -424,16 +433,17 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
   delete copy.summary.pyqLinkage;
   delete copy.summary.internationalRelevance;
 
-  copy.title = cleanRoboticJargon(copy.title);
-  copy.content = cleanRoboticJargon(copy.content);
+  copy.title = deduplicateText(copy.title);
+  copy.content = deduplicateText(copy.content);
+
   if (copy.mcq) {
-    copy.mcq.question = cleanRoboticJargon(copy.mcq.question);
-    copy.mcq.explanation = cleanRoboticJargon(copy.mcq.explanation);
+    copy.mcq.question = deduplicateText(copy.mcq.question);
+    copy.mcq.explanation = deduplicateText(copy.mcq.explanation);
     if (copy.mcq.options) {
-      copy.mcq.options = copy.mcq.options.map((opt: string) => cleanRoboticJargon(opt));
+      copy.mcq.options = copy.mcq.options.map((opt: string) => deduplicateText(opt));
     }
   }
-  
+
   return copy;
 }
 
@@ -681,138 +691,6 @@ function computeFuzzyScore(text: string, query: string): number {
 }
 
 // Scraper background worker / queue helpers
-// Helper: Fallback XML generator for sandbox resilience
-function generateFallbackRSS(sourceName: string): string {
-  const dateStr = new Date().toUTCString();
-  let itemsXml = "";
-
-  if (sourceName.indexOf("PIB") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Cabinet approves extension of Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY) for five more years</title>
-        <link>https://pib.gov.in/PressReleasePage.aspx?PRID=pmgkay-ext-2026</link>
-        <description>The Union Cabinet chaired by Prime Minister Narendra Modi has approved the extension of PMGKAY for food security governance, supporting over 81 crore citizens with free foodgrains. This prevents structural inflation and secures national nutritional standards.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Ministry of Finance releases ₹12,000 Crore interest-free loan incentives to States for Capex reforms</title>
-        <link>https://pib.gov.in/PressReleasePage.aspx?PRID=state-capex-incentives-2026</link>
-        <description>The Department of Expenditure has released financial allocations to spur physical infrastructure and bolster state level economic developments. Promotes cooperative federalism objectives in alignment with the budget strategy.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Environment") !== -1 || sourceName.indexOf("MoEFCC") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Ministry of Environment, Forest and Climate Change notifies critical eco-sensitive zones in Western Ghats</title>
-        <link>https://moefcc.gov.in/notifications/western-ghats-eco-sensitive-zone</link>
-        <description>MoEFCC has published standard statutory framework directives protecting crucial biodiversity hubs in Western Ghats. The directions mandate a safe prohibition of polluting industries, promoting sustainable eco-restorations.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>India officially achieves voluntary 33% carbon intensity reduction target ahead of 2030 NDC timeline</title>
-        <link>https://moefcc.gov.in/achievements/voluntary-ndc-carbon-reduction</link>
-        <description>The Minister announced that through robust solar grid integrations and mass afforestation policies under Mission LiFE, India has reached its environmental emission milestones, solidifying its geopolitical climate position.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Agriculture") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Ministry of Agriculture launches the 'Digital Crop Survey' pilot across 12 States for dynamic output appraisal</title>
-        <link>https://agricoop.nic.in/schemes/digital-crop-survey-25</link>
-        <description>To integrate technology-first agri-intelligence, the agricultural ministry released robust geo-referenced survey models. This enhances PM Fasal Bima Yojana accuracy and ensures automated loss credit dispatches.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Cabinet raises Minimum Support Price (MSP) for all Kharif crops of 2026-27 season to guarantee 50% margins</title>
-        <link>https://agricoop.nic.in/msp/kharif-crops-msp-2026</link>
-        <description>The Union Cabinet approved a progressive hike in Kharif crop MSP rates, securing a minimum return of 1.5 times the cost of production for foodgrain, pulses, and oilseeds, promoting socio-economic stability.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Electronics") !== -1 || sourceName.indexOf("MeitY") !== -1) {
-    itemsXml = `
-      <item>
-        <title>MeitY announces \$10 Billion Semiconductor Fabrication facility investment in Gujarat under India Semiconductor Mission</title>
-        <link>https://meity.gov.in/news/semiconductor-fab-gujarat-ism</link>
-        <description>Unveiling a major national electronics milestone, the Ministry of Electronics and IT approved setup of high-yield silicon wafers. This establishes clean room ecosystems, mitigating chip supply chains disruptions.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Ministry publishes National Strategy on Generative AI Ethics and Responsible Deployment frameworks</title>
-        <link>https://meity.gov.in/policies/generative-ai-responsible-framework</link>
-        <description>MeitY published the comprehensive guidelines for digital safety, mandate checks on algorithmic transparency, copyright protections, and localized Indian language model supports.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Education") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Ministry of Education launches 'PM-SHRI' School infrastructure upgrade grant program across rural districts</title>
-        <link>https://education.gov.in/reforms/pm-shri-upgrades</link>
-        <description>In alignment with NEP 2020 objectives, the ministry released critical funds to refurbish primary and secondary government school networks. Integrates smart classrooms and high-quality vocational workspaces.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>UGC releases National Credit Framework (NCrF) guidelines linking skill certification and mainstream university degrees</title>
-        <link>https://education.gov.in/policies/national-credit-framework-ugc</link>
-        <description>This educational regulatory reform allows candidates to accumulate credits for apprenticeships, vocational training, and research modules, enabling flexible exits and higher job linkages.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Health") !== -1) {
-    itemsXml = `
-      <item>
-        <title>Ayushman Bharat Digital Health Mission reports 50 Crore registered Abha Health Accounts across India</title>
-        <link>https://mohfw.gov.in/news/ayushman-bharat-digital-milestone</link>
-        <description>The Ministry of Health and Family Welfare reached a major digital milestone, enabling unified electronic patient diagnostics and medical records sharing. Enhances tertiary care accessibility in tier-3 cities.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Ministry of Health releases revised National Action Plan for Combatting Antimicrobial Resistance (AMR)</title>
-        <link>https://mohfw.gov.in/policies/antimicrobial-resistance-action-2026</link>
-        <description>The revised clinical guidelines mandate audits on antibiotic prescriptions across public and private hospitals, promoting awareness and introducing stricter diagnostic rules to curb drug-resistant microbes.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else if (sourceName.indexOf("Renewable") !== -1 || sourceName.indexOf("MNRE") !== -1) {
-    itemsXml = `
-      <item>
-        <title>MNRE expands PM-KUSUM scheme targets to install 35,000 MW off-grid solar agricultural water pumps</title>
-        <link>https://mnre.gov.in/schemes/pm-kusum-expansion</link>
-        <description>The ministry announced high-yield subsidies supporting rural farming solarization. Farmers can monetize surplus energy by feeding solar-power grids, driving clean-energy revenues under cooperative models.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-      <item>
-        <title>Ministry sets target of 500 GW non-fossil based installed electricity capacity milestone by the end of 2030</title>
-        <link>https://mnre.gov.in/targets/five-hundred-gigawatt-2030</link>
-        <description>MNRE detailed annual bidding capacities for offshore wind, large hydro and ultra mega floating solar fields. These measures secure sovereign carbon reductions, in line with Paris climate pathways.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  } else {
-    itemsXml = `
-      <item>
-        <title>Government of India launches the unified Single-Window National Logistic Portal for faster clearance</title>
-        <link>https://india.gov.in/news/national-logistics-portal-single-window</link>
-        <description>To raise national competitiveness, the unified logistics digital portal was finalized. It consolidates custom filings, sea-cargo schedules and inland logistics under a high-performance single dashboard.</description>
-        <pubDate>${dateStr}</pubDate>
-      </item>
-    `;
-  }
-
-  return `<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
-  <channel>
-    <title>${sourceName} Syllabus Feed</title>
-    <link>https://pib.gov.in</link>
-    <description>Resilient Syllabus Feed updates</description>
-    <lastBuildDate>${dateStr}</lastBuildDate>
-    ${itemsXml}
-  </channel>
-</rss>`;
-}
 
 // Calculate a weighted UPSC relevance score based on detailed positive and negative syllabus indicators
 function calculateWeightedUPSCScore(title: string, content: string, sourceName: string = ""): { score: number; accepted: boolean; reason: string } {
@@ -984,28 +862,21 @@ function isArticleUPSCRelevant(title: string, content: string): boolean {
 
 // Resilient fetch helper to bypass government geo-blocking and 403 blocks with realistic fallbacks
 async function fetchFeedXMLResilient(sourceUrl: string, sourceName: string): Promise<{ xmlText: string; latency: number }> {
-  try {
-    // Try clean browser crawl first
-    const response = await fetch(sourceUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Cache-Control": "no-cache"
-      },
-      signal: AbortSignal.timeout(4000)
-    });
+  const response = await fetch(sourceUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Cache-Control": "no-cache"
+    },
+    signal: AbortSignal.timeout(4000)
+  });
 
-    if (response.ok) {
-      const xmlText = await response.text();
-      return { xmlText, latency: 150 };
-    } else {
-      console.warn(`[Resilient Fetch] Feed "${sourceName}" returned HTTP ${response.status}. Spawning resilient fallback parser.`);
-      return { xmlText: generateFallbackRSS(sourceName), latency: 80 };
-    }
-  } catch (err: any) {
-    console.warn(`[Resilient Fetch] Fetch failed for "${sourceName}" [${err.message || err}]. Bypassing standard DNS with live fallback simulator.`);
-    return { xmlText: generateFallbackRSS(sourceName), latency: 50 };
+  if (response.ok) {
+    const xmlText = await response.text();
+    return { xmlText, latency: 150 };
+  } else {
+    throw new Error(`Feed "${sourceName}" returned HTTP status ${response.status}`);
   }
 }
 
@@ -1043,7 +914,7 @@ async function triggerIngestForSource(source: any) {
           continue;
         }
 
-        // NON-BLOCKING PIPELINE: If AI/Gemini is offline or fails to process, build high-quality structured backup (Never crash!)
+        // NON-BLOCKING PIPELINE: If AI/Gemini is offline or fails to process, build clean, high-confidence metadata container
         const hasKey = !!process.env.GEMINI_API_KEY;
         let aiResult: any = null;
 
@@ -1066,78 +937,91 @@ async function triggerIngestForSource(source: any) {
           continue;
         }
 
-        if (!aiResult) {
-          const categoriesPool = ["Economy", "Environment", "International Relations", "Governance", "Science & Tech", "Security", "Agriculture"];
-          let matchedCat = "Governance";
-          const dLower = (item.description || "").toLowerCase() + " " + cleanTitle.toLowerCase();
-          if (dLower.includes("gdp") || dLower.includes("rbi") || dLower.includes("tax") || dLower.includes("finance") || dLower.includes("economic") || dLower.includes("budget") || dLower.includes("urea")) matchedCat = "Economy";
-          else if (dLower.includes("carbon") || dLower.includes("climate") || dLower.includes("environment") || dLower.includes("moefcc") || dLower.includes("gases") || dLower.includes("wildlife")) matchedCat = "Environment";
-          else if (dLower.includes("treaty") || dLower.includes("bilateral") || dLower.includes("china") || dLower.includes("alliance") || dLower.includes("summit") || dLower.includes("international")) matchedCat = "International Relations";
-          else if (dLower.includes("isro") || dLower.includes("satellite") || dLower.includes("nuclear") || dLower.includes("space") || dLower.includes("technology") || dLower.includes("scientific")) matchedCat = "Science & Tech";
-          else if (dLower.includes("defence") || dLower.includes("border") || dLower.includes("cyber") || dLower.includes("security") || dLower.includes("disaster")) matchedCat = "Security";
-          else if (dLower.includes("fertilizer") || dLower.includes("soil") || dLower.includes("crop") || dLower.includes("farming") || dLower.includes("agriculture")) matchedCat = "Agriculture";
-
-          const cleanDesc = item.description ? item.description.replace(/<\/?[^>]+(>|$)/g, "").substring(0, 1000) : cleanTitle;
-
-          aiResult = {
-            accepted: true,
-            score: 7 + Math.floor(Math.random() * 3),
-            category: matchedCat,
-            tags: [matchedCat, "Syllabus Sync", "Curated Brief"],
-            readingTime: 3,
-            summary: {
-              detailedBrief: `${cleanTitle}. Highlights critical national policy implementations and regulatory developments. Key concerns focus on resource sharing, operational milestones, and administrative rollout timelines.`,
-              prelimsFacts: `• Curated from publication: ${source.name}\n• Broad Category: ${matchedCat}\n• Published Reference Date: ${new Date().toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"})}`,
-              whyMatters: `GS Paper Syllabus Focus: ${matchedCat} policy developments and regulatory actions. Key theme for GS Papers II and III.`,
-              oneLineRevision: `${cleanTitle} mapped under the executive regulatory grid of ${matchedCat}.`,
-              officialSources: `• Ministry of ${matchedCat} Gazette notifications\n• Press Information Bureau Government releases`
-            },
-            mcq: {
-              question: `With reference to the news on "${cleanTitle}", which of the following statements represents its primary significance?`,
-              options: [
-                "It introduces an administrative upgrade designed to optimize governance structures.",
-                "It represents a local municipal directive without national policy impact.",
-                "It serves purely as a commercial marketing campaign.",
-                "It cancels all previous active schemes in the sector concerned."
-              ],
-              correctAnswer: 0,
-              explanation: `Option A is correct. The development represents a key policy milestone reported by verified national and editorial sources, aiming to enhance institutional structures and state capabilities.`,
-              tags: [matchedCat]
-            }
-          };
-        }
+        const scoreObj = calculateWeightedUPSCScore(cleanTitle, item.description || cleanTitle, source.name);
 
         const articleId = "art-" + crypto.randomUUID().substring(0, 8);
         const mcqId = "mcq-" + crypto.randomUUID().substring(0, 8);
         const sumId = "sum-" + crypto.randomUUID().substring(0, 8);
 
-        const newArticle = {
-          id: articleId,
-          title: cleanTitle,
-          source: source.name,
-          sourcePriority: source.priority,
-          articleHash: hash,
-          ingestionTimestamp: new Date().toISOString(),
-          relevanceScore: aiResult.score,
-          category: aiResult.category,
-          tags: aiResult.tags,
-          content: item.description || cleanTitle,
-          readingTime: aiResult.readingTime,
-          sourceLink: item.link || '',
-          summary: {
-            id: sumId,
-            articleId,
-            ...aiResult.summary
-          },
-          mcq: {
-            id: mcqId,
-            articleId,
-            articleTitle: cleanTitle,
-            ...aiResult.mcq
-          }
-        };
+        let newArticle: any;
+
+        if (aiResult) {
+          newArticle = {
+            id: articleId,
+            title: cleanTitle,
+            source: source.name,
+            sourcePriority: source.priority,
+            articleHash: hash,
+            ingestionTimestamp: new Date().toISOString(),
+            relevanceScore: scoreObj.score,
+            category: aiResult.category,
+            tags: aiResult.tags,
+            content: (item.description || cleanTitle).replace(/<\/?[^>]+(>|$)/g, "").trim(),
+            readingTime: aiResult.readingTime,
+            sourceLink: item.link || '',
+            summary: {
+              id: sumId,
+              articleId,
+              ...aiResult.summary
+            },
+            mcq: {
+              id: mcqId,
+              articleId,
+              articleTitle: cleanTitle,
+              ...aiResult.mcq
+            }
+          };
+        } else {
+          // Trusted fallback when Gemini fails: Store raw content, no fake fabrication
+          newArticle = {
+            id: articleId,
+            title: cleanTitle,
+            source: source.name,
+            sourcePriority: source.priority,
+            articleHash: hash,
+            ingestionTimestamp: new Date().toISOString(),
+            relevanceScore: scoreObj.score,
+            category: "General Studies",
+            tags: [],
+            content: (item.description || "").replace(/<\/?[^>]+(>|$)/g, "").trim(),
+            readingTime: 2,
+            sourceLink: item.link || '',
+            summary: {
+              id: sumId,
+              articleId,
+              detailedBrief: "Detailed AI analysis currently unavailable.",
+              prelimsFacts: "• Detailed AI analysis currently unavailable.",
+              whyMatters: "Detailed AI analysis currently unavailable.",
+              oneLineRevision: "Detailed AI analysis currently unavailable.",
+              officialSources: "• Detailed AI analysis currently unavailable."
+            },
+            mcq: {
+              id: mcqId,
+              articleId,
+              articleTitle: cleanTitle,
+              question: "Practice MCQ for this topic is currently unavailable.",
+              options: ["Detailed AI analysis currently unavailable."],
+              correctAnswer: 0,
+              explanation: "Practice MCQ is not available on fallback indexing."
+            }
+          };
+        }
 
         const sanitizedArticle = sanitizeAndPolishUPSCArticle(newArticle);
+
+        // Strict audit output sanitization: check for excessive repetitions and hard reject
+        const fullAuditText = [
+          sanitizedArticle.title,
+          sanitizedArticle.summary?.detailedBrief || "",
+          sanitizedArticle.summary?.prelimsFacts || "",
+          sanitizedArticle.summary?.whyMatters || ""
+        ].join(" ");
+
+        if (isHighlyRepetitive(fullAuditText)) {
+          console.warn(`[Audit Bypass] Rejecting article due to excessive repetition: "${cleanTitle}"`);
+          continue;
+        }
+
         db.articles.push(sanitizedArticle);
         added++;
 
@@ -3156,17 +3040,16 @@ const FALLBACK_UPSC_CATALOG = [
         "World Ocean Council (WOC)"
       ],
       correctAnswer: 1,
-      explanation: "Option B is correct. Under the UN Convention on the Law of the Sea (UNCLOS), the International Seabed Authority (ISA) is authorized to organize and control all mineral-related activities in the international seabed area.",
-      tags: ["Science & Tech", "Deep Ocean Mission"]
+      explanation: "Option B is correct. Under the UN Convention on the Law of the Sea (UNCLOS), the International Seabed Authority (ISA) is authorized to organize and control all mineral-related activities in the international seabed area."
     }
   }
 ];
 
-// Helper: Ingestion pipeline with real-time Gemini processing (High Precision Dual-Layer UPSC Evaluation Engine)
+// Helper: Ingestion pipeline with real-time Gemini processing (Strict UPSC Editorial Analyst)
 async function processRawArticleThroughGemini(title: string, rawContent: string, sourceName: string, sourcePriority: string) {
   const client = getGenAI();
 
-  // 1. Strict Weighted Relevance Pre-filter Check
+  // 1. Strict Weighted Relevance check
   const weightedResult = calculateWeightedUPSCScore(title, rawContent, sourceName);
   if (!weightedResult.accepted) {
     console.log(`[UPSC Filter] Pre-filter rejected "${title}": ${weightedResult.reason}`);
@@ -3177,165 +3060,94 @@ async function processRawArticleThroughGemini(title: string, rawContent: string,
     };
   }
 
-  // 2. Initial scoring and justification logic by Gemini
-  const scoringPrompt = `You are a strict UPSC Civil Services Evaluation Engine. Analyze the following article title and content.
-  Rate its relevance for the Indian UPSC Civil Services Exam on a scale of 1 to 10.
-  
-  Strict Prioritization:
-  - High relevance (7-10): Genuinely high-yield policy developments, administrative reforms, macro-economy, international treaties, bilaterals/foreign relations, environment & biodiversity conservation acts, space/science policy directives, cybersecurity, Supreme Court constitutional judgments.
-  - Low relevance (1-6): Sports results, motivational or general news, lifestyle, corporate earnings, celebrity statements, general crime.
-  
-  If the topic is generic or doesn't map to structural governance or national welfare, score it under 7. We prefer HIGH PRECISION and quality over volume. Reject marginal topics.
+  // 2. Refined Gemini Editorial Prompt
+  const analyticalPrompt = `You are a strict UPSC editorial analyst.
+Generate concise, factual, premium editorial UPSC intelligence for the following article.
 
-  Article Title: ${title}
-  Source: ${sourceName}
-  Content Draft: ${rawContent.substring(0, 1000)}
+THE WORKSHOP PHILOSOPHY IS CONCISE POLICY BRIEFING & HIGH-TRUST NOTES. NO PSEUDO-THINK-TANK ESSAYS.
 
-  Respond with a JSON object holding structural values inside a schema:
-  {
-    "score": number, // integer 1-10
-    "justification": string // short explanation for the score (1 sentence)
+CRITICAL CONTENT CLARITY SPECIFICATIONS:
+* You MUST explain concrete reality, real implementation challenges, and physical tradeoffs.
+* NEVER use abstract, empty governance language. Write actual details instead.
+  - BAD: “improves governance coordination” -> GOOD: “allows hospitals to share digital medical records across states.”
+  - BAD: “supports institutional efficiency” -> GOOD: “reduces duplication of patient records and improves portability of healthcare access.”
+* GLOBALLY BANNED PHRASES (DO NOT USE under any circumstances):
+  - strategic coordination, systemic frameworks, developmental tracks, governance synchronization
+  - institutional capability, framework alignment, systemic evaluation frameworks
+  - institutional capability enhancement, strategic governance alignment, administrative synchronization
+  - systemic alignment, framework enhancement, institutional strengthening, policy ecosystem, implementation architecture
+* ABSOLUTELY DO NOT generate any sections such as: "Historical & Socio-Economic Context", "Mains Analytical Perspective", "Substantive Policy Reforms", "PYQ Linkage", or "Way Forward". Keep the output strictly bound to the requested JSON schema keys.
+
+Article Title: ${title}
+Source: ${sourceName}
+Content: ${rawContent}
+
+OUTPUT format must be a single raw JSON object matching this exact schema:
+{
+  "accepted": boolean, // true if topic is genuinely UPSC relevant, false if clickbait, marginal, sports, lifestyle, or celebrity news
+  "relevanceReason": string, // short 1-sentence explanation of its UPSC relevance or reason for rejection
+  "category": "Welfare Schemes" | "Food Security" | "Social Justice" | "Poverty & Hunger" | "Public Distribution System" | "Economy" | "Environment" | "International Relations" | "Governance" | "Science & Tech" | "Security" | "Agriculture",
+  "tags": string[], // max 2 tags. ONLY real topical entities (e.g., "Green Hydrogen", "PMGKAY", "Food Security"). NO generic tags or template jargon.
+  "readingTime": number, // integer estimated reading time (e.g. 2 or 3)
+  "summary": {
+    "detailedBrief": "UPSC SUMMARY: Provide a single continuous paragraph of exactly 5 to 8 concise lines. It must clearly answer: 1) What exactly happened? 2) Why is this important? 3) What problem is being solved? 4) What are the implementation challenges? 5) Why should UPSC aspirants care? Write in simple, direct, high-trust editorial language. No abstract filler.",
+    "prelimsFacts": "Key Prelims Facts (Max 5 bullets, extremely factual):\n• Fact 1 (specify real Ministry, Act/Scheme name, numbers, budget/timeline, or targets)\n• Fact 2\n• Fact 3\n• Fact 4\n• Fact 5\n(Max 5 clean bullet points, each starting with •)",
+    "whyMatters": "Why This Matters for UPSC: List real GS Paper syllabus relevance briefly in max 2 concise lines.",
+    "oneLineRevision": "One-Line Revision: Clear, high-impact revision mnemonic / statement for active recall.",
+    "officialSources": "Official Sources: Bulleted list of official citations, e.g. • Press Information Bureau (PIB)"
+  },
+  "mcq": {
+    "question": "Standard high-yield UPSC-style multiple choice question on the core factual details.",
+    "options": ["Option A", "Option B", "Option C", "Option D"], // Exactly four options
+    "correctAnswer": number, // 0-indexed correct option (0 to 3)
+    "explanation": "Clear, direct academic explanation of the correct statement."
   }
-  Ensure valid JSON format only, no markup enclosures or surrounding markdown decorators.`;
+}`;
 
-  const rankingRes = await client.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents: scoringPrompt,
-    config: {
-      responseMimeType: "application/json",
+  try {
+    const response = await client.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: analyticalPrompt,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const parsedResult = JSON.parse(response.text.trim());
+
+    if (!parsedResult.accepted) {
+      console.log(`[UPSC Filter] Gemini rejected article "${title}": ${parsedResult.relevanceReason}`);
+      return {
+        score: weightedResult.score,
+        accepted: false,
+        reason: parsedResult.relevanceReason || "Gemini evaluated low UPSC relevance"
+      };
     }
-  });
 
-  const parsedRanking = JSON.parse(rankingRes.text.trim());
-  const score = parsedRanking.score || 5;
-
-  if (score < 7) {
-    console.log(`[UPSC Filter] Gemini initial score low (${score}/10) for "${title}". Reason: ${parsedRanking.justification}`);
-    return { score, accepted: false, reason: `Gemini initial relevance too low: ${parsedRanking.justification}` };
-  }
-
-  // 3. Generate Categorization, Tags, Syllabus-focused analysis, and MCQ
-  const analyticalPrompt = `You are a Senior UPSC Faculty Editor and Chief of Academic Material. Produce a high-density, rigorous UPSC Syllabus Brief for the following article. Translate journalistic tone into premium, space-efficient, and academically rigorous policy intelligence.
-
-  CRITICAL EDITORIAL CONSTRAINTS & PROHIBITIONS:
-  1. DO NOT use generic AI filler, MBA boilerplate, or vague governance jargon. Absolutely discard phrases like: "procedural streamlining", "efficiency optimization", "framework alignment", "developmental coordination", "institutional strengthening", "structural reinforcement", "strategic alignment indices", "synergistic frameworks", "resource optimization", or "structural bottlenecks".
-  2. Map the category with extreme semantic accuracy, policy context, and syllabus relevance. For example, food subsidies and schemes like PMGKAY must map to 'Welfare Schemes' or 'Food Security' or 'Social Justice' or 'Poverty & Hunger'—NEVER categorize standard food or welfare schemes under 'Security'.
-  3. No forced constitutional linkage: Only connect constitutional articles (like Article 21 or Article 47) if there is an explicit, direct legislative or fundamental right linkage. If none, write "None direct" or leave blank.
-  4. Diverse narrative styles: Do not use a template style. Write specifically about the details of the policy (e.g. fiscal costs, subsidy outlays, statutory provisions, implementation debates, and administrative challenges).
-  5. If the AI doesn’t have high-value, academically precise analysis to add, SAY LESS. Do not attempt to inflate standard headlines into verbose paragraphs of pseudo-intellectual filler. Precision is more important than verbosity.
-
-  Title: ${title}
-  Content: ${rawContent}
-
-  Perform two actions:
-  1. Determine the core UPSC Syllabus category. Strictly choose exactly one of: Welfare Schemes, Food Security, Social Justice, Poverty & Hunger, Public Distribution System, Economy, Environment, International Relations, Governance, Science & Tech, Security, Agriculture.
-  2. Create an elite structural series of high-density insights following this precise JSON schema:
-  {
-    "category": "Welfare Schemes" | "Food Security" | "Social Justice" | "Poverty & Hunger" | "Public Distribution System" | "Economy" | "Environment" | "International Relations" | "Governance" | "Science & Tech" | "Security" | "Agriculture",
-    "tags": ["Tag1", "Tag2"], // strictly academic syllabus tags only, no parser/system logs or ingestion labels
-    "readingTime": number, // estimated reading minutes
-    "summary": {
-      "detailedBrief": "DETAILED INTELLIGENCE BRIEF: Primary section containing deep context, real history, strategic significance, actual policy provisions, implementation challenges, geopolitical/economic repercussions, and exact exam syllabus relevance. Reads like premium UPSC editorial analysis. High density, zero filler.",
-      "prelimsFacts": "• QUICK PRELIMS FACTS point 1 (specify Ministry, launch year, scheme facts, target numbers, funding ratio, reports, committees, or legal definitions)\n• QUICK PRELIMS FACTS point 2\n• QUICK PRELIMS FACTS point 3 (Max 5-6 highly dense bullets. No generic metadata)",
-      "whyMatters": "WHY THIS MATTERS FOR UPSC: Very concise, bulleted or short mapping (e.g. GS II: Welfare schemes, food security; GS III: Fiscal policy). No empty paragraphs.",
-      "oneLineRevision": "ONE-LINE REVISION CORE: An elegant, high-retention revision anchor line for rapid recall. NOT a repeat of the headline.",
-      "officialSources": "OFFICIAL SOURCES: Bulleted list of official notification citations, ministry portals, PRS, RBI, PIB, or UN reports."
-    },
-    "mcq": {
-      "question": "UPSC prelims-style multiple choice question with multi-layered statement evaluation if possible, or high-impact single question formulation.",
-      "options": ["Option A", "Option B", "Option C", "Option D"], // Exactly four options
-      "correctAnswer": 0, // 0-indexed integer corresponding to correct option (index 0 for A, 1 for B, etc.)
-      "explanation": "Extremely thorough explanation detailing why the correct option is true and other options are false, with educational citations or constitutional notes."
+    // Sanitize and filter tags: maximum 2 tags, remove generic ones
+    let cleanTags = (parsedResult.tags || []).filter(
+      (tg: string) => !["syllabus sync", "curated brief", "governance grid", "ai auto ingestion", "ai auto-ingestion", "general", "upsc"].includes(tg.toLowerCase())
+    );
+    if (cleanTags.length > 2) {
+      cleanTags = cleanTags.slice(0, 2);
     }
-  }
-
-  Output ONLY valid JSON, do not include triple backticks or other decorations.`;
-
-  const analysisRes = await client.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents: analyticalPrompt,
-    config: {
-      responseMimeType: "application/json",
+    if (cleanTags.length === 0) {
+      cleanTags = [parsedResult.category || "Governance"];
     }
-  });
 
-  const analysisResult = JSON.parse(analysisRes.text.trim());
-
-  // Backwards compatibility injector to ensure database queries and existing UI code remains flawless
-  if (analysisResult.summary) {
-    if (!analysisResult.summary.whatHappened) {
-      analysisResult.summary.whatHappened = analysisResult.summary.detailedBrief || "";
-    }
-    if (!analysisResult.summary.whyImportant) {
-      analysisResult.summary.whyImportant = analysisResult.summary.whyMatters || "";
-    }
-    if (!analysisResult.summary.background) {
-      analysisResult.summary.background = "";
-    }
-    if (!analysisResult.summary.constitutionalLinks) {
-      analysisResult.summary.constitutionalLinks = "";
-    }
-  }
-
-  // 4. SECONDARY AI VALIDATION STEP: Run verification layer to prevent leaks/force-fitting
-  const verificationPrompt = `You are a strict Senior UPSC Academic Mentor and chief editor.
-  Examine the generated UPSC Syllabus Summary and MCQ for the article titled "${title}".
-
-  Category: ${analysisResult.category}
-  Syllabus Summary:
-  ${JSON.stringify(analysisResult.summary, null, 2)}
-
-  MCQ Content:
-  ${JSON.stringify(analysisResult.mcq, null, 2)}
-
-  Evaluate if this content is genuinely relevant for the Indian Civil Services Examination of UPSC (GS Papers I, II, III, or IV).
-  
-  CRITICAL AUDIT DIRECTIVES:
-  - Look out for sports matches, cricket/football stats, celebrity gossip, lifestyle lists, product reviews, or generic opinion columns that have been force-fitted into a UPSC structure (e.g., calling a sport event "Governance" because it mentions administrative friction).
-  - If you detect placeholders or forced mappings (like mapping standard lifestyle/sports/entertainment to the Seventh Schedule or DPSP when there's no actual legislative context), you MUST flag this as a fail.
-  - Serious filter: Would a serious candidate rank this as a valid, high-signal current affairs topic? If the confidence is low, reject.
-
-  Respond with a JSON object following this exact schema:
-  {
-    "isGenuinelyUPSCRelevant": boolean, // true ONLY if high academic value, policy/legislation/governance-focused, and completely free of force-fitting
-    "relevanceConfidenceScore": number, // integer scale 1-10
-    "reasoning": "Explicit, clear explanation of why this topic is genuine current affairs or why it is rejected as forced-mapping/low-value."
-  }
-  Ensure valid JSON format only, no markup enclosures or surrounding markdown decorators.`;
-
-  const verificationRes = await client.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents: verificationPrompt,
-    config: {
-      responseMimeType: "application/json",
-    }
-  });
-
-  const verificationResult = JSON.parse(verificationRes.text.trim());
-
-  if (!verificationResult.isGenuinelyUPSCRelevant || verificationResult.relevanceConfidenceScore < 8) {
-    console.log(`[UPSC Validator] REJECTED article "${title}" in secondary validation layer! Score: ${verificationResult.relevanceConfidenceScore}/10. Reason: ${verificationResult.reasoning}`);
     return {
-      score: verificationResult.relevanceConfidenceScore || 5,
-      accepted: false,
-      reason: `Secondary validation rejected: ${verificationResult.reasoning}`
+      score: weightedResult.score,
+      accepted: true,
+      category: parsedResult.category || "Governance",
+      tags: cleanTags,
+      readingTime: parsedResult.readingTime || 2,
+      summary: parsedResult.summary,
+      mcq: parsedResult.mcq
     };
+  } catch (err) {
+    console.error(`Gemini analytical generation failed for ${title}:`, err);
+    return null;
   }
-
-  // Remove any unwanted internal tags if they slipped through
-  const cleanTags = (analysisResult.tags || []).filter(
-    (tg: string) => !["ai", "ingestion", "telemetry", "auto", "parser", "scraped", "raw", "system"].includes(tg.toLowerCase())
-  );
-
-  return {
-    score,
-    accepted: true,
-    category: analysisResult.category,
-    tags: cleanTags.length > 0 ? cleanTags : [analysisResult.category || "Governance"],
-    readingTime: analysisResult.readingTime || 3,
-    summary: analysisResult.summary,
-    mcq: analysisResult.mcq
-  };
 }
 
 // API Triggering active feed ingestion
