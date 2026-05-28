@@ -17,6 +17,7 @@ export interface AISummary {
   whyMatters?: string;       // WHY THIS MATTERS FOR UPSC (CONCISE)
   oneLineRevision: string;   // ONE-LINE REVISION CORE
   officialSources?: string;  // OFFICIAL SOURCES
+  visualConcept?: string;    // SUGGESTED INFOGRAPHIC/VISUAL METRIC
   // Backward compatibility fields
   whatHappened?: string;
   background?: string;

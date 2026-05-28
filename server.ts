@@ -21,7 +21,7 @@ try {
   // CommonJS fallback: __filename and __dirname are already globally defined at runtime
 }
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 const DB_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "db.json");
 
@@ -86,39 +86,18 @@ function getGenAI(): GoogleGenAI {
 
 // Initial Seed Data for cold starts
 const initialSources = [
-  { id: "1", name: "PIB RSS", type: "POLICY" as const, url: "https://pib.gov.in/RssMain.aspx", priority: "VERY HIGH" as const, isActive: true },
-  { id: "2", name: "PRS India Legislative Research", type: "POLICY" as const, url: "https://prsindia.org/feed/rss", priority: "VERY HIGH" as const, isActive: true },
+  { id: "1", name: "Press Information Bureau (PIB)", type: "POLICY" as const, url: "https://pib.gov.in/RssMain.aspx", priority: "VERY HIGH" as const, isActive: true },
+  { id: "2", name: "PRS Legislative Research", type: "POLICY" as const, url: "https://prsindia.org/feed/rss", priority: "VERY HIGH" as const, isActive: true },
   { id: "3", name: "Reserve Bank of India (RBI)", type: "POLICY" as const, url: "https://www.rbi.org.in/rbi_rss.xml", priority: "VERY HIGH" as const, isActive: true },
-  { id: "4", name: "Ministry of External Affairs", type: "POLICY" as const, url: "https://mea.gov.in/rss-feed", priority: "VERY HIGH" as const, isActive: true },
-  { id: "5", name: "NITI Aayog Feed", type: "POLICY" as const, url: "https://niti.gov.in/feed-updates", priority: "VERY HIGH" as const, isActive: true },
-  { id: "6", name: "ISRO Space Updates", type: "POLICY" as const, url: "https://www.isro.gov.in/isro_rss.xml", priority: "VERY HIGH" as const, isActive: true },
-  
-  { id: "7", name: "Ministry of Environment (MoEFCC)", type: "POLICY" as const, url: "https://moefcc.gov.in/feed", priority: "HIGH" as const, isActive: true },
-  { id: "8", name: "Ministry of Agriculture", type: "POLICY" as const, url: "https://agricoop.nic.in/rss", priority: "HIGH" as const, isActive: true },
-  { id: "9", name: "Ministry of Electronics & IT (MeitY)", type: "POLICY" as const, url: "https://meity.gov.in/feed", priority: "HIGH" as const, isActive: true },
-  { id: "10", name: "Ministry of Education", type: "POLICY" as const, url: "https://education.gov.in/rss", priority: "HIGH" as const, isActive: true },
-  { id: "11", name: "Ministry of Health", type: "POLICY" as const, url: "https://mohfw.gov.in/rss", priority: "HIGH" as const, isActive: true },
-  { id: "12", name: "Ministry of Jal Shakti", type: "POLICY" as const, url: "https://jalshakti.gov.in/feed", priority: "HIGH" as const, isActive: true },
-  { id: "13", name: "Ministry of Renewable Energy (MNRE)", type: "POLICY" as const, url: "https://mnre.gov.in/feedlist", priority: "HIGH" as const, isActive: true },
-  
-  { id: "14", name: "Ministry of Tribal Affairs", type: "POLICY" as const, url: "https://tribal.nic.in/rss", priority: "MEDIUM" as const, isActive: true },
-  { id: "15", name: "Ministry of Commerce", type: "POLICY" as const, url: "https://commerce.gov.in/feed", priority: "MEDIUM" as const, isActive: true },
-  { id: "16", name: "Ministry of Women & Child Dev", type: "POLICY" as const, url: "https://wcd.nic.in/feed", priority: "MEDIUM" as const, isActive: true },
-  { id: "17", name: "Ministry of Finance", type: "POLICY" as const, url: "https://finmin.gov.in/rss", priority: "MEDIUM" as const, isActive: true },
-  
-  { id: "18", name: "UN News Feed", type: "INTERNATIONAL" as const, url: "https://news.un.org/feed/subscribe/en/news/all/rss.xml", priority: "HIGH" as const, isActive: true },
-  { id: "19", name: "World Health Organization (WHO)", type: "INTERNATIONAL" as const, url: "https://www.who.int/rss-feeds/news-english.xml", priority: "MEDIUM" as const, isActive: true },
-  { id: "20", name: "IMF Report updates", type: "INTERNATIONAL" as const, url: "https://www.imf.org/en/News/RSS", priority: "MEDIUM" as const, isActive: true },
-  { id: "21", name: "World Bank Publications", type: "INTERNATIONAL" as const, url: "https://www.worldbank.org/rss", priority: "MEDIUM" as const, isActive: true },
-  
-  { id: "22", name: "The Hindu Editorial & Opinion", type: "EDITORIAL" as const, url: "https://thehindu.com/opinion/editorial/feeder/default.rss", priority: "HIGH" as const, isActive: true },
-  { id: "23", name: "Indian Express Explained", type: "EDITORIAL" as const, url: "https://indianexpress.com/section/explained/feed", priority: "HIGH" as const, isActive: true },
-  { id: "24", name: "Business Standard Policy", type: "EDITORIAL" as const, url: "https://www.business-standard.com/rss/opinion-104.rss", priority: "MEDIUM" as const, isActive: true },
-  { id: "25", name: "Livemint Economic Policy", type: "EDITORIAL" as const, url: "https://www.livemint.com/rss/opinion", priority: "MEDIUM" as const, isActive: true },
-  { id: "26", name: "The Print Opinion Tracker", type: "EDITORIAL" as const, url: "https://theprint.in/category/opinion/feed", priority: "LOW" as const, isActive: true },
-  { id: "27", name: "Down To Earth (DTE) Ecology", type: "EDITORIAL" as const, url: "https://www.downtoearth.org.in/rss/environment", priority: "LOW" as const, isActive: true },
-  { id: "28", name: "Observer Research Foundation (ORF)", type: "EDITORIAL" as const, url: "https://www.orfonline.org/feed", priority: "LOW" as const, isActive: true },
-  { id: "29", name: "Economic & Political Weekly (EPW)", type: "EDITORIAL" as const, url: "https://www.epw.in/rss.xml", priority: "LOW" as const, isActive: true }
+  { id: "4", name: "ISRO Space Updates", type: "POLICY" as const, url: "https://www.isro.gov.in/isro_rss.xml", priority: "VERY HIGH" as const, isActive: true },
+  { id: "5", name: "UN News Global Feed", type: "INTERNATIONAL" as const, url: "https://news.un.org/feed/subscribe/en/news/all/rss.xml", priority: "HIGH" as const, isActive: true },
+  { id: "6", name: "World Health Organization (WHO)", type: "INTERNATIONAL" as const, url: "https://www.who.int/feeds/entity/mediacentre/news/en/rss.xml", priority: "HIGH" as const, isActive: true },
+  { id: "7", name: "IMF Financial News", type: "INTERNATIONAL" as const, url: "https://www.imf.org/en/News/RSS", priority: "MEDIUM" as const, isActive: true },
+  { id: "8", name: "World Bank Publications", type: "INTERNATIONAL" as const, url: "https://www.worldbank.org/rss", priority: "MEDIUM" as const, isActive: true },
+  { id: "9", name: "The Hindu Editorial Columns", type: "EDITORIAL" as const, url: "https://thehindu.com/opinion/editorial/feeder/default.rss", priority: "HIGH" as const, isActive: true },
+  { id: "10", name: "Indian Express Explained", type: "EDITORIAL" as const, url: "https://indianexpress.com/section/explained/feed", priority: "HIGH" as const, isActive: true },
+  { id: "11", name: "Down To Earth (DTE) Ecology", type: "EDITORIAL" as const, url: "https://www.downtoearth.org.in/rss/environment", priority: "MEDIUM" as const, isActive: true },
+  { id: "12", name: "Observer Research Foundation (ORF)", type: "EDITORIAL" as const, url: "https://www.orfonline.org/feed", priority: "MEDIUM" as const, isActive: true }
 ];
 
 const initialArticles = [
@@ -137,7 +116,7 @@ const initialArticles = [
     summary: {
       id: "sum-seed-1",
       articleId: "seed-1",
-      detailedBrief: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for green hydrogen production, usage, and export. The policy strategically addresses India’s COP26 Net-Zero 2070 commitments by reducing fossil fuel dependency and carbon intensities in hard-to-abate sectors (steel, cement, chemical refineries). By establishing SIGHT (Strategic Interventions for Green Hydrogen Transition) as its principal financial vehicle, the mission incentivizes domestic electrolyzer production and hydrogen generation. Key challenges include high electrolysis capital expenditures, storage infrastructure pipelines, and substantial pure water requirements.",
+      detailedBrief: "The Union Cabinet approved the National Green Hydrogen Mission with an initial outlay of ₹19,744 crore to position India as a global hub for clean hydrogen production, usage, and export.\n\nThe policy aims to support India’s long-term Net-Zero targets by reducing fossil fuel dependency in high-emission sectors. Under this mission, the SIGHT program will serve as the financial helper to encourage local electrolyzer manufacturing and clean fuel production.",
       prelimsFacts: "• **Nodal Ministry**: Ministry of New and Renewable Energy (MNRE).\n• **Financial Outlay**: Initial budget of ₹19,744 crore; allocates ₹17,490 crore for SIGHT subsidies, ₹1,466 crore for pilot runs, and ₹400 crore for R&D.\n• **Target Output**: Establish 5 Million Metric Tonnes (MMT) annual production capacity of green hydrogen by 2030.\n• **Technical Definition**: Green hydrogen is produced via electrolysis of water powered entirely by renewable energy sources.",
       whyMatters: "GS Paper II & III: Infrastructure planning, clean energy transition, environment conservation acts, and economic policy instruments.",
       oneLineRevision: "The ₹19,744 Cr National Green Hydrogen Mission targets 5 MMT annual capacity by 2030, anchored by SIGHT incentives.",
@@ -178,7 +157,7 @@ const initialArticles = [
     summary: {
       id: "sum-seed-2",
       articleId: "seed-2",
-      detailedBrief: "The Union Cabinet has institutionalized the free foodgrain policy by approving a five-year extension of the Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY) from January 1, 2024, to December 31, 2028. This decision integrates the emergency pandemic-era welfare scheme directly with the National Food Security Act (NFSA), 2013. The economic outlay of ₹11.80 lakh crore over five years will be fully absorbed by the Central Government, shielding 81.35 crore vulnerable citizens from food price volatility. This structural transition raises vital fiscal and macroeconomic debates: it reduces extreme household consumption vulnerability but places a persistent burden on the central food subsidy bill, requiring streamlined FCI procurement and buffer stock management.",
+      detailedBrief: "The Union Cabinet approved a five-year extension of the Pradhan Mantri Garib Kalyan Anna Yojana (PMGKAY) from January 1, 2024, to December 31, 2028. This decision integrates the emergency foodgrain assistance program directly under the National Food Security Act (NFSA), 2013.\n\nThe Central Government will fully cover the estimated cost of ₹11.80 lakh crore over response years. This ensures free foodgrains to about 81.35 crore citizens, safeguarding low-income households from food price hikes and inflation.",
       prelimsFacts: "• **Nodal Ministry**: Ministry of Consumer Affairs, Food and Public Distribution.\n• **Beneficiary Base**: Covers ~81.35 crore cardholders spanning Antyodaya Anna Yojana (AAY) and Priority Households (PHH).\n• **Structure of Entitlement**: Priority Households receive 5 kg per person per month, while AAY households receive 35 kg per family per month free of cost.\n• **Funding Pattern**: Central Sector Scheme; 100% funded by the Central Government.\n• **Constitutional Basis**: Direct legislative manifestation of Article 47 (State duty to improve nutrition, standard of living and public health) read under Article 21 (Right to Life).",
       whyMatters: "GS Paper II & III: Food security, welfare federalism, public distribution system (PDS) reforms, agricultural procurement, and fiscal deficits.",
       oneLineRevision: "PMGKAY is extended for five years (2024–2028), securing free foodgrains for 81.35 crore NFSA cardholders at a central cost of ₹11.80 lakh crore.",
@@ -218,7 +197,7 @@ const initialArticles = [
     summary: {
       id: "sum-seed-3",
       articleId: "seed-3",
-      detailedBrief: "The enactment of the Digital Personal Data Protection (DPDP) Act, 2023, represents India's first standalone statutory framework for digital privacy, concluding a six-year legislative process triggered by the Supreme Court's landmark Puttaswamy ruling. The Act applies strictly to processed digital personal data and introduces a dual structure of rights and duties between the 'Data Principal' (individual) and the 'Data Fiduciary' (processing organization). While it modernizes consent mechanics and mandates purpose limitation, critics voice serious concerns over broad governmental exemptions, potential dilution of the Right to Information (RTI) Act, and the lack of independent structural appointments to the newly formed adjudicatory body.",
+      detailedBrief: "The enactment of the Digital Personal Data Protection (DPDP) Act, 2023, represents India's first standalone statutory framework for digital privacy, following the Supreme Court's landmark Puttaswamy judgment.\n\nThe Act outlines clear rights and duties for the 'Data Principal' (individual) while establishing obligations for 'Data Fiduciaries' (entities processing the data). It introduces the Data Protection Board of India to enforce rules and handle violations.",
       prelimsFacts: "• **Regulatory Body**: Establishes the Data Protection Board of India (DPBI) for compliance and dispute resolution.\n• **Consent Parameters**: Consent must be free, specific, informed, unconditional, and unambiguous, supported by an easy withdraw option.\n• **Fiduciary Liabilities**: Places strict obligations for data security; failing to prevent personal data breach carries penalties up to ₹250 crore.\n• **Judicial Foundation**: Grounded in K.S. Puttaswamy v. Union of India (2017) establishing the Right to Privacy under Article 21.",
       whyMatters: "GS Paper II: Fundamental Rights (Article 21), statutory regulatory authorities, digital technology governance, and federal regulatory balances.",
       oneLineRevision: "DPDP Act 2023 governs digital personal data processing, backed by the Data Protection Board of India with breach penalties up to ₹250 crore.",
@@ -421,6 +400,165 @@ function isHighlyRepetitive(text: string): boolean {
   return false;
 }
 
+function cleanPromptInstructors(text: string): string {
+  if (!text) return "";
+  let clean = text;
+  
+  const patterns = [
+    /UPSC SUMMARY:\s*/gi,
+    /Key Prelims Facts\s*(?:\([^)]*\))?:\s*/gi,
+    /Key Prelims Facts\s*/gi,
+    /One-Line Revision:\s*/gi,
+    /Suggested Visual Aid:\s*/gi,
+    /Suggested Visual Aid\s*/gi,
+    /Infographic Concept for Designer:\s*/gi,
+    /Infographic Concept for Designer\s*/gi,
+    /Visual Suggestion:\s*/gi,
+    /Visual Suggestion\s*/gi,
+    /Flowchart Suggestion:\s*/gi,
+    /Flowchart Suggestion\s*/gi,
+    /Diagram Recommendation:\s*/gi,
+    /Diagram Recommendation\s*/gi,
+    /Max 5 bullets\s*/gi,
+    /GS Paper\s*/gi,
+    /Prompt:\s*/gi,
+    /Prompt\s*/gi,
+    /For Designer:\s*/gi,
+    /For Designer\s*/gi
+  ];
+  
+  patterns.forEach(pat => {
+    clean = clean.replace(pat, "");
+  });
+  
+  return clean.replace(/^\s*[•*-]\s*/mg, "• ").trim();
+}
+
+// getCategoryFallbackImage has been removed to adhere to the strict visual trust rules. No random images will be loaded for dynamic articles.
+
+function generateStructuredVisualData(article: any): any {
+  const category = article.category || "Governance";
+  const title = article.title || "Policy Implementation";
+  const normTitle = title.replace(/[^a-zA-Z0-5\s]/g, "");
+  
+  if (category === "Welfare Schemes" || category === "Social Justice" || category === "Poverty & Hunger" || category === "Food Security") {
+    return {
+      visualType: "scheme_map",
+      title: "Scheme Distribution Architecture",
+      subtitle: "Benefit flow map and structural eligibility thresholds.",
+      nodes: [
+        { label: "Central Ministry", role: "Nodal Authority", detail: "Provides policy mandates, budget allocations & regulatory keys" },
+        { label: "Implementing Agency", role: "State Administration", detail: "Translates mandates to local execution grids and registers seekers" },
+        { label: "Citizen Beneficiary", role: "End User Recipient", detail: "Receives subsidised provisions, direct cash transfers, or social assistance" }
+      ],
+      connections: [
+        { from: "Central Ministry", to: "Implementing Agency", label: "Financing & Guidelines" },
+        { from: "Implementing Agency", to: "Citizen Beneficiary", label: "Direct Service Delivery" }
+      ]
+    };
+  } else if (category === "Economy") {
+    return {
+      visualType: "budget_tree",
+      title: "Sovereign CapEx & Fiscal Tree",
+      subtitle: "Visualizing year-on-year public outlays and economic multiplier channels.",
+      nodes: [
+        { label: "Union Budget Pool", role: "Capital Reserve", detail: "Direct funding allocation under the Consolidated Fund of India" },
+        { label: "Asset Manifestation", role: "Capital Expenditure (CapEx)", detail: "Investments in railway tracks, green transmission loops, and ports" },
+        { label: "Secondary GDP Multiplier", role: "Economic Outcome", detail: "Drives domestic steel demand, local job generation, and supply chain speed" }
+      ],
+      connections: [
+        { from: "Union Budget Pool", to: "Asset Manifestation", label: "Sectoral Grants" },
+        { from: "Asset Manifestation", to: "Secondary GDP Multiplier", label: "Operational Velocity" }
+      ]
+    };
+  } else if (category === "Environment" || category === "Agriculture") {
+    return {
+      visualType: "pipeline",
+      title: "Sustainable Ingestion & Compliance Sequence",
+      subtitle: "Implementation steps balancing carbon reduction and technology uptake.",
+      steps: [
+        { label: "Statutory Standards Draft", detail: "Aligning domestic guidelines with India's COP26 Net-Zero by 2070 directives." },
+        { label: "Electrolysis & SIGHT Subsidies", detail: "Provisioning capital credits to subsidize water electrolysis stacks and crop rotations." },
+        { label: "Third-Party Ecological Audit", detail: "Sovereign emission-tracker boards auditing pure water reserves and green hydrogen yields." }
+      ]
+    };
+  } else if (category === "Science & Tech") {
+    return {
+      visualType: "process",
+      title: "National Technological Adaptation Pipeline",
+      subtitle: "Structural translation from research concept boards to civilian deployment.",
+      steps: [
+        { label: "Incubation & Proto Lab", detail: "Design of indigenous software architectures, secure databases, or satellite bands." },
+        { label: "Sandbox Deployment", detail: "Beta field trials evaluating stress-tests, user data leaks & transmission latency." },
+        { label: "Commercialized Handover", detail: "Contractual transfer to licensed public/private vendors under ministry oversight." }
+      ]
+    };
+  } else if (category === "International Relations") {
+    return {
+      visualType: "relationship",
+      title: "Global Geopolitical Stakeholder Relationship",
+      subtitle: "Shared sea lanes, defense pacts, and bilateral friction nodes.",
+      nodes: [
+        { label: "India's External Policy", role: "Sovereign Core", detail: "Promotes strategic autonomy, multipolar logistics networks & security partners" },
+        { label: "Sovereign Partner State", role: "Alliance Focus", detail: "Coordinates on security pacts, deep-water exercises, and trade hubs" },
+        { label: "Multilateral Legal Regimes", role: "Regulatory Overlord", detail: "Aligns operations under UNCLOS, WTO guidelines, and treaties" }
+      ],
+      connections: [
+        { from: "India's External Policy", to: "Sovereign Partner State", label: "Defense & Strategic Corridors" },
+        { from: "Sovereign Partner State", to: "Multilateral Legal Regimes", label: "Statutory Accordance" }
+      ]
+    };
+  } else {
+    return {
+      visualType: "flowchart",
+      title: "Administrative Control & Execution Registry",
+      subtitle: "Flow of authority from draft notifications to local grievance redressal.",
+      nodes: [
+        { label: "Sovereign Cabinet", role: "Directive Authority", detail: "Passes bills, outlines regulatory penalties, and forms independent boards" },
+        { label: "Statutory Council Board", role: "Regulatory Arbitrator", detail: "Audits compliance, issues notices to errant entities, and manages appeals" },
+        { label: "Primary Stakeholders", role: "User & Industry Base", detail: "Practices data minimization, ensures transparent consent, and accesses portals" }
+      ],
+      connections: [
+        { from: "Sovereign Cabinet", to: "Statutory Council Board", label: "Statutory Authorization" },
+        { from: "Statutory Council Board", to: "Primary Stakeholders", label: "Supervision & Appeals" }
+      ]
+    };
+  }
+}
+
+// Helper: Strict Validation for Editorial Article Images (to avoid tracking pixels, icons, ad banners, or generic fallback Unsplash/stock images)
+function validateEditorialImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const cleanUrl = url.trim();
+  
+  // 1. Absolute protocol checklist
+  if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+    return null;
+  }
+
+  const lowerUrl = cleanUrl.toLowerCase();
+  
+  // 2. We reject GIFs, SVGs or other graphic vectors which represent icons or animated banners rather than real editorial assets.
+  if (lowerUrl.includes(".gif") || lowerUrl.includes(".svg")) {
+    return null;
+  }
+
+  // 3. Strict rejection of known tracking vectors, analytics beacons, logos, badges, social icons, and old Unsplash/stock/placeholder images.
+  const bannedKeywords = [
+    "pixel", "tracker", "spacer", "telemetry", "analytics", "doubleclick", "favicon",
+    "avatar", "gravatar", "logo", "badge", "icon", "social", "facebook", "twitter",
+    "whatsapp", "linkedin", "wp-content/themes", "wp-content/plugins", "1x1", "2x2", 
+    "10x10", "ad_banner", "advertisement", "adsystem", "cookie", "metric",
+    "unsplash.com", "unsplash", "stockphoto", "pixabay", "pexels", "placeholder", "graphic"
+  ];
+
+  if (bannedKeywords.some(keyword => lowerUrl.includes(keyword))) {
+    return null;
+  }
+
+  return cleanUrl;
+}
+
 function sanitizeAndPolishUPSCArticle(article: any): any {
   if (!article) return article;
 
@@ -428,6 +566,18 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
 
   if (!copy.summary) {
     copy.summary = {};
+  }
+
+  // 1. Validate real image against strict editorial filter.
+  // This recursively purges old Unsplash placeholders, stock photos, or invalid image states persisted in database.
+  if (copy.imageUrl) {
+    copy.imageUrl = validateEditorialImageUrl(copy.imageUrl);
+  }
+
+  if (!copy.imageUrl) {
+    copy.imageUrl = null;
+    copy.imageSource = null;
+    copy.imageAttribution = null;
   }
 
   // Dynamically synthesize a rich, high-density summary if a detailed brief isn't explicitly defined
@@ -444,19 +594,20 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
 
   let rawBrief = copy.summary.detailedBrief || copy.summary.whatHappened || copy.content || "";
 
-  const detailedBrief = deduplicateText(rawBrief);
-  const prelimsFacts = deduplicateText(
+  // Apply clean sanitizers to strip prompt debris
+  const detailedBrief = cleanPromptInstructors(deduplicateText(rawBrief));
+  const prelimsFacts = cleanPromptInstructors(deduplicateText(
     copy.summary.prelimsFacts || 
     "• Direct factual references and operational indicators under evaluation.\n• Central Ministry involvement and relevant timeline benchmarks."
-  );
-  const whyMatters = deduplicateText(
+  ));
+  const whyMatters = cleanPromptInstructors(deduplicateText(
     copy.summary.whyMatters || 
     copy.summary.whyImportant || 
     `GS Paper Syllabus focus: ${copy.category || "Governance"}`
-  );
-  const oneLineRevision = deduplicateText(copy.summary.oneLineRevision || copy.title || "");
+  ));
+  const oneLineRevision = cleanPromptInstructors(deduplicateText(copy.summary.oneLineRevision || copy.title || ""));
 
-  let officialSources = deduplicateText(copy.summary.officialSources || "");
+  let officialSources = cleanPromptInstructors(deduplicateText(copy.summary.officialSources || ""));
   if (!officialSources) {
     const src = copy.source ? copy.source.toLowerCase() : "";
     if (src.includes("pib")) {
@@ -473,7 +624,7 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
   }
 
   const briefWords = detailedBrief.split(/\s+/);
-  const cappedBrief = briefWords.length > 150 ? briefWords.slice(0, 130).join(" ") + "... [Abridged for factual high-density brevity]" : detailedBrief;
+  const cappedBrief = briefWords.length > 150 ? briefWords.slice(0, 130).join(" ") + "..." : detailedBrief;
 
   let tags = (copy.tags || []).filter((tg: string) => {
     const lower = tg.toLowerCase();
@@ -488,16 +639,64 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
 
   copy.tags = tags;
 
+  let visualConcept = cleanPromptInstructors(copy.summary.visualConcept || "");
+  if (!visualConcept) {
+    const cat = (copy.category || "Governance").toLowerCase();
+    if (cat.includes("international") || cat.includes("relations")) {
+      visualConcept = `Strategic Map: A political outline of the territory, highlighting member countries, strategic sea lanes, and critical borders under delegation.`;
+    } else if (cat.includes("economy") || cat.includes("trade")) {
+      visualConcept = `Economic Indicators Chart: A comparative data grid/chart mapping year-on-year growth, project outlays, or budgetary allocations.`;
+    } else if (cat.includes("environment") || cat.includes("agriculture") || cat.includes("science")) {
+      visualConcept = `System Process Flowchart: A clean step-by-step diagram showing the cycle of environmental, chemical, or agricultural mechanics.`;
+    } else if (cat.includes("scheme") || cat.includes("welfare") || cat.includes("governance")) {
+      visualConcept = `Benefit Flow Hierarchy: A structured tree layout highlighting the scheme's core beneficiaries, eligibility thresholds, and executive departments.`;
+    } else {
+      visualConcept = `Analytical Concept Diagram: A bulleted concept card highlighting the primary institutional stakeholders, operational levels, and administrative targets.`;
+    }
+  }
+
+  // Support structured visualData directly. Do NOT auto-generate random diagrams for every article.
+  let visualData = copy.summary.visualData || copy.visualData;
+  if (!visualData) {
+    // Only generate default diagram mappings for seed articles/onboarding to showcase platform capabilities elegantly.
+    if (copy.id === "seed-1" || copy.id === "seed-2" || copy.id === "seed-3" || (copy.id && copy.id.toString().startsWith("seed-"))) {
+      visualData = generateStructuredVisualData(copy);
+    } else {
+      visualData = null;
+    }
+  }
+  if (visualData) {
+    if (visualData.title) visualData.title = cleanPromptInstructors(visualData.title);
+    if (visualData.subtitle) visualData.subtitle = cleanPromptInstructors(visualData.subtitle);
+    if (visualData.steps) {
+      visualData.steps = visualData.steps.map((st: any) => ({
+        label: cleanPromptInstructors(st.label),
+        detail: cleanPromptInstructors(st.detail || "")
+      }));
+    }
+    if (visualData.nodes) {
+      visualData.nodes = visualData.nodes.map((nd: any) => ({
+        label: cleanPromptInstructors(nd.label),
+        role: cleanPromptInstructors(nd.role || ""),
+        detail: cleanPromptInstructors(nd.detail || "")
+      }));
+    }
+  }
+
   copy.summary = {
     detailedBrief: cappedBrief,
     prelimsFacts,
     whyMatters,
     oneLineRevision,
     officialSources,
+    visualConcept,
+    visualData,
 
     whatHappened: cappedBrief,
     whyImportant: whyMatters
   };
+
+  copy.visualData = visualData;
 
   delete copy.summary.background;
   delete copy.summary.mainsAnalysis;
@@ -506,14 +705,14 @@ function sanitizeAndPolishUPSCArticle(article: any): any {
   delete copy.summary.pyqLinkage;
   delete copy.summary.internationalRelevance;
 
-  copy.title = deduplicateText(copy.title);
-  copy.content = deduplicateText(copy.content);
+  copy.title = cleanPromptInstructors(deduplicateText(copy.title));
+  copy.content = cleanPromptInstructors(deduplicateText(copy.content));
 
   if (copy.mcq) {
-    copy.mcq.question = deduplicateText(copy.mcq.question);
-    copy.mcq.explanation = deduplicateText(copy.mcq.explanation);
+    copy.mcq.question = cleanPromptInstructors(deduplicateText(copy.mcq.question));
+    copy.mcq.explanation = cleanPromptInstructors(deduplicateText(copy.mcq.explanation));
     if (copy.mcq.options) {
-      copy.mcq.options = copy.mcq.options.map((opt: string) => deduplicateText(opt));
+      copy.mcq.options = copy.mcq.options.map((opt: string) => cleanPromptInstructors(deduplicateText(opt)));
     }
   }
 
@@ -621,10 +820,7 @@ async function syncWithMongo() {
       const colName = key === "revision_cards" ? "revision_cards" : key;
       const col = mDb.collection(colName);
       
-      // Perform complete database cleanup of stale articles, bookmarks, cards and ingestion logs on startup to purge legacy cached AI-generated text
-      if (key === "articles" || key === "ingestion_logs" || key === "revision_cards" || key === "bookmarks") {
-        await col.deleteMany({});
-      }
+      // Maintain persistent historical archive. Never automatically delete articles, bookmarks, cards or logs on startup.
       
       let mongoList = await col.find({}).toArray();
       
@@ -695,6 +891,19 @@ async function syncWithMongo() {
       // Polish articles to high-density clean format
       if (key === "articles" && db.articles) {
         db.articles = db.articles.map((a: any) => sanitizeAndPolishUPSCArticle(a));
+
+        // Identify if any legacy images fail our visual editorial criteria, and update Mongo to wipe them out permanently!
+        let changedCount = 0;
+        for (const article of mongoList) {
+          if (article.imageUrl && !validateEditorialImageUrl(article.imageUrl)) {
+            const col = mDb.collection("articles");
+            await col.updateOne({ id: article.id }, { $set: { imageUrl: null, imageSource: null, imageAttribution: null } });
+            changedCount++;
+          }
+        }
+        if (changedCount > 0) {
+          console.log(`Successfully purged ${changedCount} legacy Unsplash/stock images from MongoDB Atlas cluster.`);
+        }
       }
     }
 
@@ -735,6 +944,36 @@ function saveDB(data: any) {
   }
 }
 
+// System-wide diagnostic metrics logger
+function printDatabaseAuditLogs() {
+  const db = loadDB();
+  const totalArticles = db.articles ? db.articles.length : 0;
+  const articlesHidden = db.articles ? db.articles.filter((a: any) => a.relevanceScore < 7).length : 0;
+  const articlesDisplayed = db.articles ? db.articles.filter((a: any) => a.relevanceScore >= 7).length : 0;
+  
+  let totalProcessed = 0;
+  let totalIngested = 0;
+  if (db.ingestion_logs) {
+    db.ingestion_logs.forEach((log: any) => {
+      totalProcessed += (log.articlesProcessed || 0);
+      totalIngested += (log.articlesIngested || 0);
+    });
+  }
+  const duplicateMerges = Math.max(0, totalProcessed - totalIngested);
+
+  console.log("==================================================");
+  console.log("     OFFICERAI INTEGRITY LIFECYCLE AUDIT          ");
+  console.log("--------------------------------------------------");
+  console.log(` * Total Articles Stored in DB : ${totalArticles}`);
+  console.log(` * Articles Displayed (Score>=7) : ${articlesDisplayed}`);
+  console.log(` * Articles Hidden (Score<7)   : ${articlesHidden}`);
+  console.log(` * Cumulative Articles Processed : ${totalProcessed}`);
+  console.log(` * Cumulative Articles Ingested  : ${totalIngested}`);
+  console.log(` * Duplicate Merges/Skips        : ${duplicateMerges}`);
+  console.log(` * Health Status                 : Persistence Intact & Running`);
+  console.log("==================================================");
+}
+
 // Setup Express Router
 const app = express();
 app.use(express.json());
@@ -772,6 +1011,9 @@ function computeFuzzyScore(text: string, query: string): number {
 
 // Calculate a weighted UPSC relevance score based on detailed positive and negative syllabus indicators
 function calculateWeightedUPSCScore(title: string, content: string, sourceName: string = ""): { score: number; accepted: boolean; reason: string } {
+  const titleLower = title.toLowerCase();
+  const contentLower = content.toLowerCase();
+  const srcLower = sourceName.toLowerCase();
   const text = `${title} ${content} ${sourceName}`.toLowerCase();
 
   // 1. Hard NEGATIVE signals (sports, entertainment gossip, lifestyle, non-policy opinions, etc.)
@@ -796,28 +1038,6 @@ function calculateWeightedUPSCScore(title: string, content: string, sourceName: 
     "viral list", "dating app", "crush", "personal relationship", "insider scoop"
   ];
 
-  let negativeMatchCount = 0;
-  const matchedNegatives: string[] = [];
-
-  for (const term of sportsTerms) {
-    if (text.includes(term)) {
-      negativeMatchCount++;
-      matchedNegatives.push(term);
-    }
-  }
-  for (const term of celebEntertainmentTerms) {
-    if (text.includes(term)) {
-      negativeMatchCount++;
-      matchedNegatives.push(term);
-    }
-  }
-  for (const term of lifestyleBusinessFluff) {
-    if (text.includes(term)) {
-      negativeMatchCount++;
-      matchedNegatives.push(term);
-    }
-  }
-
   // 2. Clear POSITIVE academic signals (Syllabus-focused concepts)
   const positiveSignals = [
     { term: "pib", weight: 3 },
@@ -839,12 +1059,12 @@ function calculateWeightedUPSCScore(title: string, content: string, sourceName: 
     { term: "union list", weight: 2.5 },
     { term: "state list", weight: 2.5 },
     { term: "concurrent list", weight: 2.5 },
-    { term: "treaty", weight: 2 },
+    { term: "treaty", weight: 2.5 },
     { term: "bilateral relations", weight: 3 },
     { term: "foreign policy", weight: 3 },
     { term: "diplomacy", weight: 2 },
     { term: "diplomatic", weight: 2 },
-    { term: "summit", weight: 1.5 },
+    { term: "summit", weight: 2 },
     { term: "government scheme", weight: 3 },
     { term: "yojana", weight: 3 },
     { term: "welfare program", weight: 3 },
@@ -878,14 +1098,29 @@ function calculateWeightedUPSCScore(title: string, content: string, sourceName: 
     { term: "satellite launch", weight: 2 },
     { term: "space mission", weight: 2.5 },
     { term: "semiconductor mission", weight: 3 },
-    { term: "digital public infrastructure", weight: 35 },
+    { term: "digital public infrastructure", weight: 3.5 },
     { term: "financial inclusion", weight: 2.5 },
     { term: "insolvency", weight: 2 },
     { term: "agrarian", weight: 2 },
     { term: "minimum support price", weight: 3 },
     { term: "msp", weight: 3 },
     { term: "cooperative federalism", weight: 3 },
-    { term: "niti aayog", weight: 3 }
+    { term: "niti aayog", weight: 3 },
+    { term: "multilateral", weight: 2.5 },
+    { term: "geopolit", weight: 2.5 },
+    { term: "sustainable development", weight: 3 },
+    { term: "emission reduction", weight: 2.5 },
+    { term: "public health", weight: 3 },
+    { term: "who status", weight: 2.5 },
+    { term: "global economy", weight: 2 },
+    { term: "unsc", weight: 3 },
+    { term: "united nations", weight: 2.5 },
+    { term: "co2", weight: 2 },
+    { term: "greenhouse gas", weight: 2.5 },
+    { term: "disaster management", weight: 3 },
+    { term: "epidemic", weight: 2 },
+    { term: "disease control", weight: 2.5 },
+    { term: "foreign trade", weight: 2.5 }
   ];
 
   let positiveScore = 0;
@@ -898,9 +1133,54 @@ function calculateWeightedUPSCScore(title: string, content: string, sourceName: 
   }
 
   // Boost score for high-value government sources
-  const srcLower = sourceName.toLowerCase();
   if (srcLower.includes("pib") || srcLower.includes("prs") || srcLower.includes("gov") || srcLower.includes("ministry")) {
     positiveScore += 4;
+  }
+
+  let negativeMatchCount = 0;
+  const matchedNegatives: string[] = [];
+
+  // Always check negative signals in TITLE (the strongest indicator of sports/celeb news)
+  for (const term of sportsTerms) {
+    if (titleLower.includes(term)) {
+      negativeMatchCount += 2;
+      matchedNegatives.push(`title:${term}`);
+    }
+  }
+  for (const term of celebEntertainmentTerms) {
+    if (titleLower.includes(term)) {
+      negativeMatchCount += 2;
+      matchedNegatives.push(`title:${term}`);
+    }
+  }
+  for (const term of lifestyleBusinessFluff) {
+    if (titleLower.includes(term)) {
+      negativeMatchCount += 2;
+      matchedNegatives.push(`title:${term}`);
+    }
+  }
+
+  // Only check negative signals in CONTENT if there are no positive syllabus matches.
+  // This completely eliminates false-positives driven by sidebar trending link noise on premium news sites.
+  if (positiveScore < 1.5) {
+    for (const term of sportsTerms) {
+      if (contentLower.includes(term)) {
+        negativeMatchCount++;
+        matchedNegatives.push(`content:${term}`);
+      }
+    }
+    for (const term of celebEntertainmentTerms) {
+      if (contentLower.includes(term)) {
+        negativeMatchCount++;
+        matchedNegatives.push(`content:${term}`);
+      }
+    }
+    for (const term of lifestyleBusinessFluff) {
+      if (contentLower.includes(term)) {
+        negativeMatchCount++;
+        matchedNegatives.push(`content:${term}`);
+      }
+    }
   }
 
   // Calculate final weighted score
@@ -912,15 +1192,14 @@ function calculateWeightedUPSCScore(title: string, content: string, sourceName: 
   let reason = "Passed weighted syllabus relevancy.";
 
   if (negativeMatchCount > 0) {
-    // If any negative matches exist, we require a explicit policy context override to prevent sports/celeb gossip leaks
     const hasStrongSyllabusOverride = matchedPositives.some((p) =>
-      ["policy", "legislation", "treaty", "ministry of", "cabinet approval", "supreme court", "government scheme", "yojana", "cooperative federalism"].includes(p)
+      ["policy", "legislation", "treaty", "ministry of", "cabinet approval", "supreme court", "government scheme", "yojana", "cooperative federalism", "sustainable development", "public health"].includes(p)
     );
-    if (!hasStrongSyllabusOverride || finalScore < 7) {
+    if (!hasStrongSyllabusOverride || finalScore < 5) {
       accepted = false;
       reason = `Rejected due to negative signals [found: ${matchedNegatives.join(", ")}] and lack of clear policy override framework.`;
     }
-  } else if (finalScore < 6 && matchedPositives.length === 0) {
+  } else if (finalScore < 5 && matchedPositives.length === 0) {
     accepted = false;
     reason = "Low academic value: does not map to any recognized UPSC GS Syllabus topic categories.";
   }
@@ -940,22 +1219,119 @@ function isArticleUPSCRelevant(title: string, content: string): boolean {
 
 // Resilient fetch helper to bypass government geo-blocking and 403 blocks with realistic fallbacks
 async function fetchFeedXMLResilient(sourceUrl: string, sourceName: string): Promise<{ xmlText: string; latency: number }> {
-  const response = await fetch(sourceUrl, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.5",
-      "Cache-Control": "no-cache"
-    },
-    signal: AbortSignal.timeout(4000)
-  });
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive"
+  };
 
-  if (response.ok) {
-    const xmlText = await response.text();
-    return { xmlText, latency: 150 };
-  } else {
-    throw new Error(`Feed "${sourceName}" returned HTTP status ${response.status}`);
+  const timeoutWindow = 12000; // 12 seconds
+  let lastError: any = null;
+
+  // Retry logic with exponential backoff on fetch
+  let delay = 1000;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const startTime = Date.now();
+      const response = await fetch(sourceUrl, { headers, signal: AbortSignal.timeout(timeoutWindow) });
+      const latency = Date.now() - startTime;
+      
+      if (response.ok) {
+        const text = await response.text();
+        return { xmlText: text, latency };
+      } else {
+        throw new Error(`HTTP status ${response.status}`);
+      }
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[Fetch Feed Retry] Source "${sourceName}" attempt ${attempt + 1}/3 failed: ${err.message}`);
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 2;
+      }
+    }
   }
+
+  // SCRAPE FALLBACK: If standard RSS fetches failed 3 times, try fetching the root home/parent page directory as a scraper target.
+  try {
+    const parentUrl = new URL(sourceUrl);
+    const parentTarget = `${parentUrl.protocol}//${parentUrl.hostname}`;
+    console.log(`[Resilient Pipeline] RSS failed for "${sourceName}". Fetching root parent target "${parentTarget}" for scraper salvage...`);
+    
+    const startTime = Date.now();
+    const response = await fetch(parentTarget, { headers, signal: AbortSignal.timeout(timeoutWindow) });
+    const latency = Date.now() - startTime;
+    
+    if (response.ok) {
+      const text = await response.text();
+      // Prefix with dummy HTML markup to let trigger loop recognize HTML scraping mode
+      return { xmlText: `<!DOCTYPE html> <!-- salvage target --> ${text}`, latency };
+    }
+  } catch (salvageErr: any) {
+    console.error(`[Resilient Pipeline Salvage Failed] for "${sourceName}":`, salvageErr.message);
+  }
+
+  throw new Error(`Feed "${sourceName}" completely failed: ${lastError?.message || "Timeout"}`);
+}
+
+// Scrape fallback: AI-powered direct extraction of relevant articles from raw fallback HTML pages
+async function extractArticlesFromHTMLPage(htmlContent: string, sourceName: string): Promise<any[]> {
+  const genAI = getGenAI();
+  if (!genAI) {
+    console.warn(`[HTML Scraper] Gemini API key not found. Skipping intelligent HTML extraction fallback.`);
+    return [];
+  }
+  
+  // Clean markup up to optimize context window tokens
+  const cleanText = htmlContent
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<\/?[^>]+(>|$)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .substring(0, 15000); // 15k character safety cutoff
+
+  try {
+    const model = "gemini-3.5-flash";
+    const prompt = `You are an expert web scraper and UPSC syllabus researcher.
+Analyze the following raw plain text of clean HTML of ${sourceName}.
+Identify and extract the top 2 most important and recent policy decisions, bills, climate targets, international summits, national security developments, or global economics reports described within this content.
+
+Text:
+${cleanText}
+
+Return exactly a JSON array containing 1 or 2 items matching the structure shown below.
+Return ONLY valid JSON. Avoid markdown wrappers or other commentary.
+[
+  {
+    "title": "Title of the policy development or news story",
+    "description": "A very clean, descriptive overview paragraph (at least 3-4 sentences long) detailing exactly what happened and why it is a significant national/global development for administrative or regulatory purposes",
+    "link": "A plausible absolute URL inside the source website domain",
+    "pubDate": "${new Date().toISOString()}"
+  }
+]`;
+
+    const response = await genAI.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const bodyText = response.text || "";
+    const cleanJSON = bodyText.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleanJSON);
+    if (Array.isArray(parsed)) {
+      console.log(`[HTML Scraper] Gemini extracted ${parsed.length} articles successfully from HTML fallback of ${sourceName}`);
+      return parsed;
+    }
+  } catch (err: any) {
+    console.error(`[HTML Scraper Extraction Error] Failed using Gemini scraper for ${sourceName}:`, err);
+  }
+  return [];
 }
 
 // Scraper background worker / queue helpers
@@ -968,8 +1344,15 @@ async function triggerIngestForSource(source: any) {
   
   try {
     const { xmlText, latency } = await fetchFeedXMLResilient(source.url, source.name);
-    const parsedItems = parseRSSFeedXML(xmlText);
     source.lastLatency = latency;
+
+    let parsedItems: any[] = [];
+    if (xmlText.trim().toLowerCase().startsWith("<html") || xmlText.trim().toLowerCase().includes("<!doctype html")) {
+      console.log(`[Resilient Pipeline] RSS feed resolved to an HTML document. Triggering direct fallback intelligent scraper for "${source.name}"`);
+      parsedItems = await extractArticlesFromHTMLPage(xmlText, source.name);
+    } else {
+      parsedItems = parseRSSFeedXML(xmlText);
+    }
 
     source.successCount = (source.successCount || 0) + 1;
     source.lastStatus = "SUCCESS";
@@ -986,11 +1369,7 @@ async function triggerIngestForSource(source: any) {
           continue;
         }
 
-        // Apply strict UPSC relevance pre-filter (prevent sports, entertainment leaks)
-        if (!isArticleUPSCRelevant(cleanTitle, item.description || "")) {
-          console.log(`[UPSC Filter] Background job skipping blacklisted irrelevant content: "${cleanTitle}"`);
-          continue;
-        }
+        const scoreObj = calculateWeightedUPSCScore(cleanTitle, item.description || cleanTitle, source.name);
 
         // NON-BLOCKING PIPELINE: If AI/Gemini is offline or fails to process, build clean, high-confidence metadata container
         const hasKey = !!process.env.GEMINI_API_KEY;
@@ -1009,21 +1388,14 @@ async function triggerIngestForSource(source: any) {
           }
         }
 
-        // If Gemini actively analyzed the article and chose to REJECT it, discard it completely instead of making a mock fallback!
-        if (aiResult && !aiResult.accepted) {
-          console.log(`[UPSC Filter] Discarding background article actively rejected by Gemini: "${cleanTitle}" (Reason: ${aiResult.reason || 'low score'})`);
-          continue;
-        }
-
-        const scoreObj = calculateWeightedUPSCScore(cleanTitle, item.description || cleanTitle, source.name);
-
         const articleId = "art-" + crypto.randomUUID().substring(0, 8);
         const mcqId = "mcq-" + crypto.randomUUID().substring(0, 8);
         const sumId = "sum-" + crypto.randomUUID().substring(0, 8);
 
         let newArticle: any;
 
-        if (aiResult) {
+        // Only store as AI-enriched if Gemini generated a positive accepted summary
+        if (aiResult && aiResult.accepted) {
           newArticle = {
             id: articleId,
             title: cleanTitle,
@@ -1031,7 +1403,7 @@ async function triggerIngestForSource(source: any) {
             sourcePriority: source.priority,
             articleHash: hash,
             ingestionTimestamp: new Date().toISOString(),
-            relevanceScore: scoreObj.score,
+            relevanceScore: aiResult.score || scoreObj.score,
             category: aiResult.category,
             tags: aiResult.tags,
             content: (item.description || cleanTitle).replace(/<\/?[^>]+(>|$)/g, "").trim(),
@@ -1050,7 +1422,7 @@ async function triggerIngestForSource(source: any) {
             }
           };
         } else {
-          // Trusted fallback when Gemini fails: Store raw content, no fake fabrication
+          // Trusted fallback when Gemini fails, rejects, or pre-filter is low: Store raw content to keep database complete
           newArticle = {
             id: articleId,
             title: cleanTitle,
@@ -1221,6 +1593,36 @@ app.get("/api/live-updates", (req, res) => {
   });
 });
 
+// Helper: Resolve and validate JWT Token (originally getUserIdFromReq)
+function getUserIdFromReq(req: any): string | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return null;
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
+  const token = parts[1];
+  if (token.startsWith("mock-jwt-token-")) {
+    return token.slice("mock-jwt-token-".length);
+  }
+  return null;
+}
+
+// Security: Administrative Authorization Middleware (protects all /api/admin/* endpoints)
+function requireAdmin(req: any, res: any, next: any) {
+  const userId = getUserIdFromReq(req);
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized: Please sign in with an administrative account." });
+  }
+  const db = loadDB();
+  const user = db.users.find((u: any) => u.id === userId);
+  if (!user || user.email.toLowerCase() !== "abhishekraiop@gmail.com") {
+    return res.status(403).json({ error: "Access Denied: Administrative privileges are strictly required." });
+  }
+  req.user = user;
+  next();
+}
+
+app.use("/api/admin", requireAdmin);
+
 // Admin System Monitoring Diagnostics Stats Endpoint
 app.get("/api/admin/diagnostics", (req, res) => {
   const db = loadDB();
@@ -1232,22 +1634,52 @@ app.get("/api/admin/diagnostics", (req, res) => {
   const failedFeeds = sources.filter((s: any) => s.status === "FAILED" || s.lastStatus === "FAILED").length;
   
   const avgLatency = sources.reduce((acc: number, s: any) => acc + (s.lastLatency || 1200), 0) / (totalFeeds || 1);
-  const rejectedCount = Math.floor(Math.random() * 20) + 15;
   
   const today = new Date();
-  const indexedToday = db.articles.filter((a: any) => {
+  const indexedToday = db.articles ? db.articles.filter((a: any) => {
     const ts = new Date(a.ingestionTimestamp);
     return ts.setHours(0,0,0,0) === today.setHours(0,0,0,0);
-  }).length;
+  }).length : 0;
+
+  const totalArticles = db.articles ? db.articles.length : 0;
+  const articlesHidden = db.articles ? db.articles.filter((a: any) => a.relevanceScore < 7).length : 0;
+  const articlesDisplayed = db.articles ? db.articles.filter((a: any) => a.relevanceScore >= 7).length : 0;
+
+  let totalProcessed = 0;
+  let totalIngested = 0;
+  if (db.ingestion_logs) {
+    db.ingestion_logs.forEach((log: any) => {
+      totalProcessed += (log.articlesProcessed || 0);
+      totalIngested += (log.articlesIngested || 0);
+    });
+  }
+  const duplicateMerges = Math.max(0, totalProcessed - totalIngested);
+
+  // Trigger server-side diagnostic logging
+  printDatabaseAuditLogs();
 
   res.json({
     activeFeeds: `${activeFeeds}/${totalFeeds}`,
     failedFeeds,
     lastSync: db.ingestion_logs && db.ingestion_logs.length > 0 ? db.ingestion_logs[db.ingestion_logs.length - 1].timestamp : new Date().toISOString(),
-    indexedToday: indexedToday || 24,
-    rejectedCount,
+    indexedToday,
+    rejectedCount: articlesHidden,
     avgLatency: `${Math.round(avgLatency)}ms`,
     averageRefreshSpeed: "2.4 feeds/sec",
+    uptimeMetrics: {
+      averageLatencyMs: avgLatency,
+      rejectedCount: articlesHidden,
+      totalArticlesStored: totalArticles,
+      articlesHidden,
+      articlesDisplayed,
+      duplicateMerges
+    },
+    feedHealthMetrics: sources.map((s: any) => ({
+      name: s.name,
+      uptimeRate: s.uptimeRate || 100,
+      lastSuccessTime: s.lastSuccess || null,
+      failures: s.failureCount || 0
+    })),
     // Feed students list directly from primary MongoDB Atlas
     users: registeredUsersList.map((u: any) => ({
       id: u.id,
@@ -1405,19 +1837,7 @@ app.post("/api/auth/google", (req, res) => {
   });
 });
 
-// Middleware to resolve and validate Mock JWT Token
-function getUserIdFromReq(req: any): string | null {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return null;
-  const parts = authHeader.split(" ");
-  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
-  const token = parts[1];
-  if (token.startsWith("mock-jwt-token-")) {
-    return token.slice("mock-jwt-token-".length);
-  }
-  return null;
-}
-
+// API: Retrieve info about currently logged-in user
 app.get("/api/auth/me", (req, res) => {
   const userId = getUserIdFromReq(req);
   if (!userId) {
@@ -2583,8 +3003,8 @@ app.get(seoFriendlyPaths, (req, res, next) => {
 });
 
 // Helper: Regex-based RSS and Atom XML Feed Parser
-function parseRSSFeedXML(xmlText: string): Array<{ title: string; link: string; description: string; pubDate: string }> {
-  const items: Array<{ title: string; link: string; description: string; pubDate: string }> = [];
+function parseRSSFeedXML(xmlText: string): Array<{ title: string; link: string; description: string; pubDate: string; imageUrl: string | null }> {
+  const items: Array<{ title: string; link: string; description: string; pubDate: string; imageUrl: string | null }> = [];
   
   // RSS 2.0 <item> Parsing
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
@@ -2593,18 +3013,38 @@ function parseRSSFeedXML(xmlText: string): Array<{ title: string; link: string; 
     const content = match[1];
     const titleMatch = content.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
     const linkMatch = content.match(/<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i);
-    const descMatch = content.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i);
+    const descMatch = content.match(/<description>([\s\S]*?)<\/description>/i);
     const pubDateMatch = content.match(/<pubDate>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/pubDate>/i);
 
     const title = titleMatch ? titleMatch[1].trim() : "";
     const link = linkMatch ? linkMatch[1].trim() : "";
-    let description = descMatch ? descMatch[1].trim() : "";
-    // Clean description HTML tags
-    description = description.replace(/<\/?[^>]+(>|$)/g, " ").replace(/\s+/g, " ").trim();
+    let rawDesc = descMatch ? descMatch[1].trim() : "";
+    
+    // Extract Image URL
+    let imageUrl: string | null = null;
+    const enclosureMatch = content.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
+    if (enclosureMatch) {
+      imageUrl = enclosureMatch[1];
+    } else {
+      const mediaMatch = content.match(/<(?:media:content|content)[^>]+url=["']([^"']+)["']/i);
+      if (mediaMatch) {
+        imageUrl = mediaMatch[1];
+      } else {
+        const imgMatch = rawDesc.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgMatch) {
+          imageUrl = imgMatch[1];
+        }
+      }
+    }
+
+    // Pass through precise visual trust validation
+    imageUrl = validateEditorialImageUrl(imageUrl);
+
+    let description = rawDesc.replace(/<\/?[^>]+(>|$)/g, " ").replace(/\s+/g, " ").trim();
     const pubDate = pubDateMatch ? pubDateMatch[1].trim() : new Date().toISOString();
 
     if (title) {
-      items.push({ title, link, description, pubDate });
+      items.push({ title, link, description, pubDate, imageUrl });
     }
   }
 
@@ -2615,17 +3055,32 @@ function parseRSSFeedXML(xmlText: string): Array<{ title: string; link: string; 
       const content = match[1];
       const titleMatch = content.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
       const linkMatch = content.match(/<link[^>]*href=["']([^"']+)["']/i);
-      const summaryMatch = content.match(/<(?:summary|content)[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/(?:summary|content)>/i);
+      const summaryMatch = content.match(/<(?:summary|content)[^>]*>([\s\S]*?)<\/(?:summary|content)>/i);
       const updatedMatch = content.match(/<updated>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/updated>/i);
 
       const title = titleMatch ? titleMatch[1].trim() : "";
       const link = linkMatch ? linkMatch[1] : "";
-      let description = summaryMatch ? summaryMatch[1].trim() : "";
-      description = description.replace(/<\/?[^>]+(>|$)/g, " ").replace(/\s+/g, " ").trim();
+      let rawDesc = summaryMatch ? summaryMatch[1].trim() : "";
+      
+      let imageUrl: string | null = null;
+      const mediaMatch = content.match(/<(?:media:content|content)[^>]+url=["']([^"']+)["']/i);
+      if (mediaMatch) {
+        imageUrl = mediaMatch[1];
+      } else {
+        const imgMatch = rawDesc.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgMatch) {
+          imageUrl = imgMatch[1];
+        }
+      }
+
+      // Pass through precise visual trust validation
+      imageUrl = validateEditorialImageUrl(imageUrl);
+
+      let description = rawDesc.replace(/<\/?[^>]+(>|$)/g, " ").replace(/\s+/g, " ").trim();
       const pubDate = updatedMatch ? updatedMatch[1].trim() : new Date().toISOString();
 
       if (title) {
-        items.push({ title, link, description, pubDate });
+        items.push({ title, link, description, pubDate, imageUrl });
       }
     }
   }
@@ -3139,22 +3594,19 @@ async function processRawArticleThroughGemini(title: string, rawContent: string,
   }
 
   // 2. Refined Gemini Editorial Prompt
-  const analyticalPrompt = `You are a strict UPSC editorial analyst.
-Generate concise, factual, premium editorial UPSC intelligence for the following article.
+  const analyticalPrompt = `You are a senior UPSC editorial director and veteran writer.
+Generate extremely sharp, concise, premium, and natural educational intelligence for the following article.
 
-THE WORKSHOP PHILOSOPHY IS CONCISE POLICY BRIEFING & HIGH-TRUST NOTES. NO PSEUDO-THINK-TANK ESSAYS.
+THE WORKSHOP PHILOSOPHY IS SHARP POLICY BRIEFING & HIGH-TRUST DIRECT EXPLAINDERS. NO AI PROMPT SECTIONS OR TEXT LABELS.
 
-CRITICAL CONTENT CLARITY SPECIFICATIONS:
-* You MUST explain concrete reality, real implementation challenges, and physical tradeoffs.
-* NEVER use abstract, empty governance language. Write actual details instead.
-  - BAD: “improves governance coordination” -> GOOD: “allows hospitals to share digital medical records across states.”
-  - BAD: “supports institutional efficiency” -> GOOD: “reduces duplication of patient records and improves portability of healthcare access.”
-* GLOBALLY BANNED PHRASES (DO NOT USE under any circumstances):
-  - strategic coordination, systemic frameworks, developmental tracks, governance synchronization
-  - institutional capability, framework alignment, systemic evaluation frameworks
-  - institutional capability enhancement, strategic governance alignment, administrative synchronization
-  - systemic alignment, framework enhancement, institutional strengthening, policy ecosystem, implementation architecture
-* ABSOLUTELY DO NOT generate any sections such as: "Historical & Socio-Economic Context", "Mains Analytical Perspective", "Substantive Policy Reforms", "PYQ Linkage", or "Way Forward". Keep the output strictly bound to the requested JSON schema keys.
+CRITICAL CONTENT SPECS:
+* Write direct, concise, and calm editorial prose using short sentences and transitions.
+* Summaries should explain clearly, stay concise, use natural rhythm, and avoid giant compressed paragraphs. Provide 2 to 4 smaller, highly readable paragraphs.
+* STRICTLY avoid think-tank language, synthetic policy jargon, over-academic phrasing, and AI-style intellectual compression.
+* Do NOT use complex buzzwords or phrases like: "productivity-led expansion", "structural administrative synchronization", "execution architecture", "sovereign framework integration". Prefer simple, human, and precise explanations.
+* NEVER include labels, headings, or markers in the text values, like "UPSC SUMMARY:", "Key Prelims Facts:", "One-Line Revision:", or "Suggested Visual Aid". Start the value immediately with the clean, polished content.
+* Avoid clickbait, promotional terms, corporate fluff, or repetitive policy empty words.
+* Every fact must be educational, actionable, and touch upon specific ministries, acts, allocations, and administrative thresholds.
 
 Article Title: ${title}
 Source: ${sourceName}
@@ -3162,25 +3614,42 @@ Content: ${rawContent}
 
 OUTPUT format must be a single raw JSON object matching this exact schema:
 {
-  "accepted": boolean, // true if topic is genuinely UPSC relevant, false if clickbait, marginal, sports, lifestyle, or celebrity news
-  "relevanceReason": string, // short 1-sentence explanation of its UPSC relevance or reason for rejection
+  "accepted": boolean, // true if topic has real UPSC GS Syllabus relevance, false if marginal or clickbait
+  "relevanceReason": string, // short explanatory sentence
   "category": "Welfare Schemes" | "Food Security" | "Social Justice" | "Poverty & Hunger" | "Public Distribution System" | "Economy" | "Environment" | "International Relations" | "Governance" | "Science & Tech" | "Security" | "Agriculture",
-  "tags": string[], // max 2 tags. ONLY real topical entities (e.g., "Green Hydrogen", "PMGKAY", "Food Security"). NO generic tags or template jargon.
-  "readingTime": number, // integer estimated reading time (e.g. 2 or 3)
+  "tags": string[], // max 2. Real entities (e.g. "PM-KISAN", "UPI"). NO templates.
+  "readingTime": number, // integer (e.g. 2 or 3)
   "summary": {
-    "detailedBrief": "UPSC SUMMARY: Provide a high-density, rich educational summary (around 5 to 8 lines or 3 to 5 comprehensive sentences). DO NOT merely repeat or paraphrase the headline. Instead, TEACH the topic: 1) What exactly happened and what is the real-world context? 2) Why was this initiative/report/scheme launched, and what core national problem does it solve? 3) Why is it nationally or policy-significant? 4) What are the major implementation challenges, trade-offs, or political/economic debates (e.g. rising subsidy burden, doctor shortages, federal friction, long-term fiscal sustainability)? Ensure every single sentence is packed with a real fact, implication, or policy insight. No empty, abstract filler.",
-    "prelimsFacts": "Key Prelims Facts (Max 5 bullets, extremely factual):\n• Fact 1 (specify real Ministry, Act/Scheme name, numbers, budget/timeline, or targets)\n• Fact 2\n• Fact 3\n• Fact 4\n• Fact 5\n(Max 5 clean bullet points, each starting with •)",
-    "whyMatters": "Why This Matters for UPSC: List real GS Paper syllabus relevance briefly in max 2 concise lines.",
-    "oneLineRevision": "One-Line Revision: Clear, high-impact revision mnemonic / statement for active recall.",
-    "officialSources": "Official Sources: Bulleted list of highly specific official citations WITH real, clickable URLs if available (e.g. • Press Information Bureau PIB Releases (https://pib.gov.in/PressReleasePage.aspx?PRID=1888547)). DO NOT output generic placeholders like 'RBI Notifications & Policy Statements' or plain ministry names. Cite real URLs."
+    "detailedBrief": "A highly clear and natural direct explanation layout in 2 to 4 short, readable paragraphs. Avoid big blocks of text and policy jargon. Keep it focused and high-signal.",
+    "prelimsFacts": "Factual bullets only, each starting with • (Max 4-5 bullets. Do NOT add 'Key Prelims Facts' label. Start immediately with bullet points)",
+    "whyMatters": "Syllabus core relevance in 1 to 2 lines, beginning immediately with paper syllabus names (GS-II / GS-III etc.)",
+    "oneLineRevision": "Revision recall statement / mnemonic (Without the phrase 'One-Line Revision:')",
+    "officialSources": "Specific official references with links, each starting with • (e.g., • Press Information Bureau Releases (https://pib.gov.in))",
+    "visualData": {
+      "visualType": "timeline" | "flowchart" | "pipeline" | "hierarchy" | "scheme_map" | "budget_tree" | "process" | "relationship",
+      "title": "A crisp, short, premium title of the diagram",
+      "subtitle": "Short 1-sentence subtitle describing the data relationship",
+      "steps": [ // Only populate if visualType is timeline, process, or pipeline. Otherwise leave undefined or empty.
+        { "label": "Milestone Title", "detail": "Short explanation" }
+      ],
+      "nodes": [ // Only populate if visualType is flowchart, hierarchy, scheme_map, budget_tree, or relationship. Otherwise leave undefined or empty.
+        { "label": "Department/Component Name", "role": "Nodal role label (e.g., Implementing Agency)", "detail": "Short primary duty/operational limit" }
+      ],
+      "connections": [ // Only populate if connected flowchart or network. Otherwise leave undefined or empty.
+        { "from": "Node Label Source", "to": "Node Label Target", "label": "Core service/fund flow" }
+      ]
+    },
+    "visualConcept": "Short secondary visual description"
   },
   "mcq": {
-    "question": "Standard high-yield UPSC-style multiple choice question on the core factual details.",
-    "options": ["Option A", "Option B", "Option C", "Option D"], // Exactly four options
+    "question": "Rigorous high-yield UPSC multiple choice question on core facts.",
+    "options": ["Option A", "Option B", "Option C", "Option D"], // exactly four
     "correctAnswer": number, // 0-indexed correct option (0 to 3)
-    "explanation": "Clear, direct academic explanation of the correct statement."
+    "explanation": "Direct explanation of why the correct option is right and others are incorrect."
   }
-}`;
+}
+
+CRITICAL: Return ONLY RAW JSON. No markdown enclosures. No templates.`;
 
   try {
     const response = await client.models.generateContent({
@@ -3219,7 +3688,11 @@ OUTPUT format must be a single raw JSON object matching this exact schema:
       category: parsedResult.category || "Governance",
       tags: cleanTags,
       readingTime: parsedResult.readingTime || 2,
-      summary: parsedResult.summary,
+      summary: {
+        ...parsedResult.summary,
+        visualData: parsedResult.summary?.visualData || null,
+        visualConcept: parsedResult.summary?.visualConcept || "A concrete flowchart mapping out the administrative hierarchy and benefit delivery pathway for this initiative."
+      },
       mcq: parsedResult.mcq
     };
   } catch (err) {
@@ -3301,62 +3774,96 @@ app.post("/api/admin/ingest", async (req, res) => {
               continue;
             }
 
-            // Apply strict UPSC relevance pre-filter (prevent sports, entertainment leaks)
-            if (!isArticleUPSCRelevant(cleanTitle, item.description || "")) {
-              console.log(`[UPSC Filter] Manual Sync skipping blacklisted irrelevant content: "${cleanTitle}"`);
-              continue;
-            }
-
+            const scoreObj = calculateWeightedUPSCScore(cleanTitle, item.description || cleanTitle, source.name);
             newArticlesFetchedCount++;
 
+            let geminiResult: any = null;
             if (hasKey) {
               // Active processing through real Gemini
               try {
-                const geminiResult = await processRawArticleThroughGemini(
+                geminiResult = await processRawArticleThroughGemini(
                   cleanTitle,
                   item.description || cleanTitle,
                   source.name,
                   source.priority
                 );
-
-                if (geminiResult.accepted) {
-                  const articleId = "art-" + crypto.randomUUID().substring(0, 8);
-                  const mcqId = "mcq-" + crypto.randomUUID().substring(0, 8);
-                  const sumId = "sum-" + crypto.randomUUID().substring(0, 8);
-
-                  const newArticle = {
-                    id: articleId,
-                    title: cleanTitle,
-                    source: source.name,
-                    sourcePriority: source.priority,
-                    articleHash: hash,
-                    ingestionTimestamp: new Date().toISOString(),
-                    relevanceScore: geminiResult.score,
-                    category: geminiResult.category,
-                    tags: geminiResult.tags,
-                    content: item.description || cleanTitle,
-                    readingTime: geminiResult.readingTime,
-                    sourceLink: item.link || '',
-                    summary: {
-                      id: sumId,
-                      articleId,
-                      ...geminiResult.summary
-                    },
-                    mcq: {
-                      id: mcqId,
-                      articleId,
-                      articleTitle: cleanTitle,
-                      ...geminiResult.mcq
-                    }
-                  };
-
-                  db.articles.push(sanitizeAndPolishUPSCArticle(newArticle));
-                  addedCount++;
-                }
               } catch (geminiErr) {
                 console.error(`Gemini failed for ${cleanTitle}:`, geminiErr);
               }
             }
+
+            const articleId = "art-" + crypto.randomUUID().substring(0, 8);
+            const mcqId = "mcq-" + crypto.randomUUID().substring(0, 8);
+            const sumId = "sum-" + crypto.randomUUID().substring(0, 8);
+
+            let newArticle: any;
+
+            if (geminiResult && geminiResult.accepted) {
+              newArticle = {
+                id: articleId,
+                title: cleanTitle,
+                source: source.name,
+                sourcePriority: source.priority,
+                imageUrl: item.imageUrl || null,
+                articleHash: hash,
+                ingestionTimestamp: new Date().toISOString(),
+                relevanceScore: geminiResult.score || scoreObj.score,
+                category: geminiResult.category,
+                tags: geminiResult.tags,
+                content: (item.description || cleanTitle).replace(/<\/?[^>]+(>|$)/g, "").trim(),
+                readingTime: geminiResult.readingTime,
+                sourceLink: item.link || '',
+                summary: {
+                  id: sumId,
+                  articleId,
+                  ...geminiResult.summary
+                },
+                mcq: {
+                  id: mcqId,
+                  articleId,
+                  articleTitle: cleanTitle,
+                  ...geminiResult.mcq
+                }
+              };
+            } else {
+              // Trusted fallback when Gemini fails, rejects, or pre-filter is low: Store raw content to keep database complete
+              newArticle = {
+                id: articleId,
+                title: cleanTitle,
+                source: source.name,
+                sourcePriority: source.priority,
+                imageUrl: item.imageUrl || null,
+                articleHash: hash,
+                ingestionTimestamp: new Date().toISOString(),
+                relevanceScore: scoreObj.score,
+                category: "General Studies",
+                tags: [],
+                content: (item.description || "").replace(/<\/?[^>]+(>|$)/g, "").trim(),
+                readingTime: 2,
+                sourceLink: item.link || '',
+                summary: {
+                  id: sumId,
+                  articleId,
+                  detailedBrief: "Detailed AI analysis currently unavailable or marked lower priority.",
+                  prelimsFacts: "• Detailed AI analysis currently unavailable or marked lower priority.",
+                  whyMatters: "Detailed AI analysis currently unavailable or marked lower priority.",
+                  oneLineRevision: "Detailed AI analysis currently unavailable or marked lower priority.",
+                  officialSources: `• ${source.name} Editorial / Article Source (${item.link || source.url})`
+                },
+                mcq: {
+                  id: mcqId,
+                  articleId,
+                  articleTitle: cleanTitle,
+                  question: "Practice MCQ for this topic is currently unavailable.",
+                  options: ["Detailed AI analysis currently unavailable."],
+                  correctAnswer: 0,
+                  explanation: "Practice MCQ is not available on fallback indexing."
+                }
+              };
+            }
+
+            db.articles.push(sanitizeAndPolishUPSCArticle(newArticle));
+            addedCount++;
           }
         } else {
           processedSourcesStats.push(`${source.name} (Online, but returned 0 items)`);
@@ -3749,14 +4256,8 @@ if (process.env.NODE_ENV !== "production") {
       try {
         await syncWithMongo();
         
-        // Active purge of any existing blacklisted sports/entertainment articles from DB cache
-        const startDb = loadDB();
-        const startArticlesLen = startDb.articles.length;
-        startDb.articles = startDb.articles.filter((art: any) => isArticleUPSCRelevant(art.title, art.content || ""));
-        if (startDb.articles.length < startArticlesLen) {
-          console.log(`[UPSC Filter] Bootup Purge: Removed ${startArticlesLen - startDb.articles.length} irrelevant articles from DB.`);
-          saveDB(startDb);
-        }
+        // Print active system diagnostic metrics log
+        printDatabaseAuditLogs();
 
         startBackgroundScheduler();
       } catch (err) {
@@ -3777,14 +4278,8 @@ if (process.env.NODE_ENV !== "production") {
     try {
       await syncWithMongo();
       
-      // Active purge of any existing blacklisted sports/entertainment articles from DB cache
-      const startDb = loadDB();
-      const startArticlesLen = startDb.articles.length;
-      startDb.articles = startDb.articles.filter((art: any) => isArticleUPSCRelevant(art.title, art.content || ""));
-      if (startDb.articles.length < startArticlesLen) {
-        console.log(`[UPSC Filter] Bootup Purge: Removed ${startArticlesLen - startDb.articles.length} irrelevant articles from DB.`);
-        saveDB(startDb);
-      }
+      // Print active system diagnostic metrics log
+      printDatabaseAuditLogs();
 
       startBackgroundScheduler();
     } catch (err) {

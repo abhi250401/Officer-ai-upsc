@@ -259,6 +259,68 @@ export default function ArticleDetail({
             {/* Dynamic UPSC intelligence brief */}
             <div className="space-y-8 pt-2 font-serif text-[#292524] text-[13.5px] leading-relaxed">
               
+            {/* Real Article Image with crisp source attribution under it, or brand placeholder briefing header */}
+            <div className="space-y-1 w-full animate-fade-in" id="editorial-detail-media">
+              <div className="w-full relative rounded-lg overflow-hidden border border-stone-200/50 bg-stone-100 aspect-video md:aspect-[21/9] select-none flex items-center justify-center">
+                {(article as any).imageUrl ? (
+                  <img
+                    src={(article as any).imageUrl}
+                    alt={article.title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover select-none"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = document.getElementById("detail-editorial-fallback");
+                      if (fallback) {
+                        fallback.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+
+                {/* Elegant Editorial Placeholder briefing background */}
+                <div 
+                  id="detail-editorial-fallback"
+                  className="w-full h-full flex flex-col justify-between p-6 md:p-8 bg-gradient-to-br from-[#FAFAF9] via-[#FAF9F6] to-stone-100 border-b-4 border-[#0F766E]/40"
+                  style={{ display: (article as any).imageUrl ? 'none' : 'flex' }}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col space-y-1 text-left">
+                      <span className="text-[10px] font-mono font-bold tracking-widest text-[#0F766E] uppercase bg-[#E0F2FE]/50 text-[#0F766E] px-2.5 py-1 rounded-sm border border-[#0F766E]/10 w-fit">
+                        {article.category || "UPSC Briefing"}
+                      </span>
+                      <span className="text-[9px] font-mono text-stone-400 uppercase tracking-tight pt-1">
+                        {article.source} • {article.readingTime}m reading layout
+                      </span>
+                    </div>
+                    {/* Ashoka Chakra style or elegant legal medallion seal */}
+                    <div className="text-[#0F766E]/75 w-11 h-11 flex items-center justify-center rounded-full border border-stone-200/60 bg-white shadow-sm font-serif text-sm">
+                      ◈
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-w-2xl text-left">
+                    <p className="text-base md:text-lg font-display font-semibold text-stone-900 leading-tight tracking-tight">
+                      {article.title}
+                    </p>
+                    <div className="w-12 h-[1px] bg-[#0F766E]/30"></div>
+                    <p className="text-[9.5px] text-stone-400 font-sans tracking-wide uppercase font-semibold">
+                      OFFICERAI PRE-SECURE SYLLABUS INTELLIGENCE
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* In-Article Source Attribution block */}
+              {(article as any).imageUrl && (
+                <div className="flex items-center justify-between px-1 text-[10px] text-[#A8A29E] font-sans">
+                  <span>Source: <strong className="text-stone-500">{(article as any).imageSource || article.source || 'PIB India Archive'}</strong></span>
+                  {(article as any).imageAttribution && <span>Attribution: <em className="text-stone-500">{(article as any).imageAttribution}</em></span>}
+                </div>
+              )}
+            </div>
+
               {/* Summary */}
               <div className="space-y-2">
                 <h3 className="text-sm font-sans font-bold text-[#1C1917] tracking-tight">Summary</h3>
@@ -290,6 +352,8 @@ export default function ArticleDetail({
                   &ldquo;{oneLineRevision}&rdquo;
                 </div>
               </div>
+
+
 
               {/* Official Source */}
               <div className="space-y-2">
