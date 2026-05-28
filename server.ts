@@ -21,7 +21,7 @@ try {
   // CommonJS fallback: __filename and __dirname are already globally defined at runtime
 }
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const DB_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "db.json");
 
